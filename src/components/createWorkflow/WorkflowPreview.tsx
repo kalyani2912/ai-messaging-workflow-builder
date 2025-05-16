@@ -81,56 +81,58 @@ const WorkflowPreview = ({ steps }: WorkflowPreviewProps) => {
   };
 
   return (
-    <div className="flex flex-col h-full bg-gray-50 border-l">
-      <div className="p-4 border-b bg-white">
+    <div className="flex flex-col h-full">
+      <div className="p-4 border-b bg-white sticky top-0 z-10">
         <h3 className="text-lg font-medium">Workflow Preview</h3>
         <p className="text-sm text-gray-500">
           Watch your workflow build in real-time
         </p>
       </div>
 
-      <ScrollArea className="flex-1 p-4">
-        {steps.length === 0 ? (
-          <div className="text-center py-8">
-            <p className="text-gray-500 mb-2">No steps yet</p>
-            <p className="text-sm text-gray-400">
-              Start chatting to build your workflow
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {steps.map((step, index) => (
-              <div key={step.id} className="relative">
-                <div className="flex items-start gap-4">
-                  {getStepIcon(step.type, step.channel)}
-                  <div className="flex-1">
-                    <div className="bg-white p-3 rounded-lg border shadow-sm">
-                      <p className="font-medium mb-1">{step.description}</p>
-                      {step.channel && (
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-gray-500">
-                            Channel: {step.channel}
-                          </span>
-                          {step.timing && (
-                            <span className="text-sm bg-gray-100 px-2 py-1 rounded">
-                              {step.timing}
+      <ScrollArea className="flex-1">
+        <div className="p-4">
+          {steps.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-gray-500 mb-2">No steps yet</p>
+              <p className="text-sm text-gray-400">
+                Start chatting to build your workflow
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {steps.map((step, index) => (
+                <div key={step.id} className="relative">
+                  <div className="flex items-start gap-4">
+                    {getStepIcon(step.type, step.channel)}
+                    <div className="flex-1">
+                      <div className="bg-white p-3 rounded-lg border shadow-sm">
+                        <p className="font-medium mb-1">{step.description}</p>
+                        {step.channel && (
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-gray-500">
+                              Channel: {step.channel}
                             </span>
-                          )}
-                        </div>
-                      )}
+                            {step.timing && (
+                              <span className="text-sm bg-gray-100 px-2 py-1 rounded">
+                                {step.timing}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
+                  {index < steps.length - 1 && (
+                    <div className="absolute left-5 top-12 h-8 w-0 border-l-2 border-gray-200"></div>
+                  )}
                 </div>
-                {index < steps.length - 1 && (
-                  <div className="absolute left-5 top-12 h-8 w-0 border-l-2 border-gray-200"></div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
+        </div>
       </ScrollArea>
 
-      <div className="p-4 border-t bg-white">
+      <div className="p-4 border-t bg-white sticky bottom-0">
         <Button 
           variant="outline" 
           className="w-full flex items-center justify-center"

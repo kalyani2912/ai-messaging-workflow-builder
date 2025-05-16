@@ -40,7 +40,8 @@ const Workflows = () => {
     }
   };
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return "—";
     try {
       return formatDistanceToNow(new Date(dateString), { addSuffix: true });
     } catch (e) {
@@ -95,6 +96,7 @@ const Workflows = () => {
                   <TableHead>Channel</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Last Updated</TableHead>
+                  <TableHead>Last Run</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -109,6 +111,7 @@ const Workflows = () => {
                       </span>
                     </TableCell>
                     <TableCell>{formatDate(workflow.updatedAt)}</TableCell>
+                    <TableCell>{formatDate(workflow.last_run_at)}</TableCell>
                     <TableCell className="text-right">
                       <Button variant="outline" asChild size="sm">
                         <Link to={`/workflow/${workflow.id}`}>{workflow.status === 'draft' ? 'Edit' : 'View'}</Link>

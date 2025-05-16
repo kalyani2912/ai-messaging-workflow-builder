@@ -16,6 +16,7 @@ export interface StoredWorkflow {
   conversationHistory: ConversationItem[];
   createdAt: string;
   updatedAt: string;
+  last_run_at: string | null; // New field for tracking last run date
 }
 
 export interface ConversationItem {
@@ -60,7 +61,11 @@ export const saveWorkflow = (
         ...workflowData,
         status,
         conversationHistory,
-        updatedAt: now
+        updatedAt: now,
+        // Only update last_run_at if the status is 'launched' and it's a new launch or was previously a draft
+        last_run_at: status === 'launched' ? 
+          (workflows[existingIndex].status === 'draft' || !workflows[existingIndex].last_run_at ? now : workflows[existingIndex].last_run_at) 
+          : workflows[existingIndex].last_run_at
       };
       
       workflows[existingIndex] = updated;
@@ -84,7 +89,8 @@ export const saveWorkflow = (
         status,
         conversationHistory,
         createdAt: now,
-        updatedAt: now
+        updatedAt: now,
+        last_run_at: status === 'launched' ? now : null // Only set last_run_at if the workflow is being launched
       };
       
       workflows.push(newWorkflow);
@@ -163,7 +169,12 @@ try {
   if (storedWorkflows) {
     const parsedWorkflows = JSON.parse(storedWorkflows);
     if (Array.isArray(parsedWorkflows)) {
-      workflows.push(...parsedWorkflows);
+      // Ensure all workflows have the last_run_at field
+      const updatedWorkflows = parsedWorkflows.map(workflow => ({
+        ...workflow,
+        last_run_at: workflow.last_run_at || (workflow.status === 'launched' ? workflow.updatedAt : null)
+      }));
+      workflows.push(...updatedWorkflows);
     }
   }
 } catch (error) {

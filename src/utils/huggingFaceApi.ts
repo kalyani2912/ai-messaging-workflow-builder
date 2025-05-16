@@ -6,6 +6,21 @@ interface HuggingFaceResponse {
   generated_text: string;
 }
 
+// Middleware to sanitize AI responses
+export const sanitizeResponse = (response: string): string => {
+  // Check for hallucinated content
+  if (
+    response.includes("User:") ||
+    response.includes("Assistant:") ||
+    response.match(/Message (sent|scheduled|delivered)/i) ||
+    response.includes("workflow saved") ||
+    response.includes("workflow launched")
+  ) {
+    return "Please reply to proceed with your workflow setup.";
+  }
+  return response;
+};
+
 // Get response from Agent 1 (Zephyr model)
 export const getAIResponse = async (systemPrompt: string, userMessage: string): Promise<string> => {
   try {
@@ -39,7 +54,8 @@ export const getAIResponse = async (systemPrompt: string, userMessage: string): 
       return "I'm having trouble. Could you try again?";
     }
     
-    return data[0].generated_text.trim();
+    // Sanitize the response before returning
+    return sanitizeResponse(data[0].generated_text.trim());
   } catch (error) {
     console.error("Error calling Hugging Face API:", error);
     return "Sorry, I encountered an error. Please try again in a moment.";
@@ -90,47 +106,33 @@ ${workflowData.message?.content ? `→ 🟡 Action: Send message ${workflowData.
   }
 };
 
-// Function to build the system prompt based on the current workflow state
-export const buildSystemPrompt = (workflow: WorkflowData): string => {
-  let prompt = "You are a helpful assistant that builds messaging workflows in a concise, neutral tone. Keep responses short (1-2 sentences).";
-  
-  // Add information about what's been collected so far
-  const collectedInfo = [];
-  
-  if (workflow.keyword) {
-    collectedInfo.push(`the keyword '${workflow.keyword}'`);
-  }
-  
-  if (workflow.trigger_channel) {
-    collectedInfo.push(`'${workflow.trigger_channel}' as the trigger channel`);
-  }
-  
-  if (workflow.message.content) {
-    collectedInfo.push("message content");
-  }
-  
-  if (workflow.message.delay) {
-    collectedInfo.push(`message delay of '${workflow.message.delay}'`);
-  }
-  
-  if (collectedInfo.length > 0) {
-    prompt += " So far, the user has provided " + collectedInfo.join(", ") + ".";
-  }
-  
-  // Determine the next question based on what's missing
-  if (!workflow.keyword) {
-    prompt += " Ask what keyword should trigger this workflow.";
-  } else if (!workflow.trigger_channel) {
-    prompt += " Ask which channel should the user send this keyword from (SMS, WhatsApp, Email, Messenger only).";
-  } else if (!workflow.message.content) {
-    prompt += " Ask what message should be sent in response when someone sends the keyword.";
-  } else if (!workflow.message.delay) {
-    prompt += " Ask if they would like to delay this message.";
-  } else {
-    prompt += " Inform them the workflow configuration is complete.";
-  }
-  
-  return prompt;
+// Function to build the system prompt for Agent 1
+export const buildSystemPrompt = (): string => {
+  return `You are a messaging workflow builder assistant. Your job is to help users create simple, keyword-triggered messaging automations.
+
+Ask the user ONE QUESTION at a time and WAIT for their response. Your job is to collect the following fields step-by-step:
+
+The keyword that should trigger the workflow (e.g., 'HELP', 'OFFER')
+The channel the keyword will be received on (SMS, WhatsApp, Email, Messenger)
+The message to send when the keyword is received
+Whether the message should be delayed (e.g., "immediate", "after 1 hour")
+Whether the user wants to launch the workflow or save it as a draft
+
+CRITICAL RULES:
+
+DO NOT simulate or imagine the user's input.
+DO NOT generate example user responses like "User: Yes" or "User: No".
+DO NOT simulate outcomes or messages like "Message sent!" or "Workflow saved!" unless the user has explicitly confirmed that action.
+DO NOT generate multiple assistant messages in one turn — respond only ONCE per user message.
+DO NOT add to or modify the user's message content.
+DO NOT assume the user wants personalization, variable injection, or marketing templates unless they ask.
+DO NOT suggest product categories or simulate product flows.
+
+Keep your tone professional, minimal, and instructional — not like customer support or marketing.
+After each user response, give a short confirmation (e.g., "Got it. We'll send the message via SMS.") and ask the next relevant question.
+Limit your responses to 2 short sentences unless more explanation is requested.
+
+Your job is to gather data, not execute the workflow. Once all required inputs are collected, confirm the configuration and inform the user they can choose to launch or save it.`;
 };
 
 // Types

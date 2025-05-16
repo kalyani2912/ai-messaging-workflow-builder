@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -259,8 +260,8 @@ const ChatInterface = ({ onUpdateWorkflow, initialWorkflow }: ChatInterfaceProps
             addAIMessage("Your workflow is now complete. You can launch it now or save it as a draft.");
           }
         } else {
-          // Normal AI response
-          const systemPrompt = buildSystemPrompt(updatedWorkflow);
+          // Normal AI response - use the new system prompt
+          const systemPrompt = buildSystemPrompt();
           const response = await getAIResponse(systemPrompt, userInput);
           addAIMessage(response);
         }
@@ -376,32 +377,35 @@ const ChatInterface = ({ onUpdateWorkflow, initialWorkflow }: ChatInterfaceProps
         </p>
       </div>
       
-      <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
-        <div className="space-y-4 min-h-[calc(100%-2rem)]">
-          {messages.map((msg) => (
-            <div
-              key={msg.id}
-              className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}
-            >
+      {/* Use position-relative for the scroll area container to ensure scrollbar appears within it */}
+      <div className="relative flex-1 overflow-hidden">
+        <ScrollArea className="h-full p-4" ref={scrollAreaRef}>
+          <div className="space-y-4">
+            {messages.map((msg) => (
               <div
-                className={`max-w-[80%] p-3 rounded-lg ${
-                  msg.sender === "user"
-                    ? "bg-primary text-primary-foreground rounded-br-none"
-                    : "bg-gray-100 text-gray-800 rounded-bl-none"
-                }`}
+                key={msg.id}
+                className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}
               >
-                <p className="mb-1">{msg.content}</p>
-                <p className={`text-xs ${msg.sender === "user" ? "text-blue-100" : "text-gray-500"} text-right`}>
-                  {msg.timestamp}
-                </p>
+                <div
+                  className={`max-w-[80%] p-3 rounded-lg ${
+                    msg.sender === "user"
+                      ? "bg-primary text-primary-foreground rounded-br-none"
+                      : "bg-gray-100 text-gray-800 rounded-bl-none"
+                  }`}
+                >
+                  <p className="mb-1">{msg.content}</p>
+                  <p className={`text-xs ${msg.sender === "user" ? "text-blue-100" : "text-gray-500"} text-right`}>
+                    {msg.timestamp}
+                  </p>
+                </div>
               </div>
-            </div>
-          ))}
-          <div ref={messagesEndRef} />
-        </div>
-      </ScrollArea>
+            ))}
+            <div ref={messagesEndRef} />
+          </div>
+        </ScrollArea>
+      </div>
       
-      <div className="p-4 border-t">
+      <div className="p-4 border-t bg-white">
         {isWorkflowComplete ? (
           <div className="space-y-3">
             <div className="flex justify-between gap-3">

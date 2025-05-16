@@ -117,7 +117,7 @@ const WorkflowDetail = () => {
 
   return (
     <Layout>
-      <div className="container mx-auto py-12">
+      <div className="container mx-auto py-12 flex flex-col h-[calc(100vh-64px)]">
         <div className="mb-10">
           <h1 className="text-3xl font-bold mb-2">Workflow: {workflow.keyword}</h1>
           <p className="text-gray-600">
@@ -127,20 +127,20 @@ const WorkflowDetail = () => {
           </p>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
           <TabsList className="w-full border-b pb-px mb-8">
             <TabsTrigger value="info" className="text-lg">Workflow Info</TabsTrigger>
             <TabsTrigger value="conversation" className="text-lg">AI Conversation History</TabsTrigger>
             <TabsTrigger value="edit" className="text-lg">Edit Workflow</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="info">
+          <TabsContent value="info" className="flex-1">
             <WorkflowInfo 
               id={workflow.id}
               name={workflow.keyword}
               type={workflowType}
               createdOn={new Date(workflow.createdAt).toLocaleDateString()}
-              lastRun={new Date(workflow.updatedAt).toLocaleDateString()}
+              lastRun={workflow.last_run_at ? new Date(workflow.last_run_at).toLocaleDateString() : "—"}
               status={workflow.status === 'launched' ? 'Active' : 'Draft'}
               created_by="You"
               message_count={0}
@@ -148,19 +148,19 @@ const WorkflowDetail = () => {
             />
           </TabsContent>
           
-          <TabsContent value="conversation">
+          <TabsContent value="conversation" className="flex-1">
             <ConversationHistory messages={workflow.conversationHistory} />
           </TabsContent>
           
-          <TabsContent value="edit">
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-0 h-[calc(100vh-250px)] min-h-[500px] border rounded-lg overflow-hidden shadow-sm">
+          <TabsContent value="edit" className="flex-1 overflow-hidden">
+            <div className="h-full grid grid-cols-1 lg:grid-cols-4 gap-0 border rounded-lg shadow-sm overflow-hidden">
               {/* Chat interface takes 75% */}
-              <div className="lg:col-span-3 h-full">
+              <div className="lg:col-span-3 h-full overflow-hidden">
                 <ChatInterface onUpdateWorkflow={handleUpdateWorkflow} initialWorkflow={workflow} />
               </div>
               
               {/* Workflow preview takes 25% */}
-              <div className="lg:col-span-1 h-full">
+              <div className="lg:col-span-1 h-full overflow-hidden">
                 <WorkflowPreview steps={workflowSteps} />
               </div>
             </div>
