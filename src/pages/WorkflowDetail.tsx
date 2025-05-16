@@ -50,7 +50,7 @@ const WorkflowDetail = () => {
             id: 2,
             type: "message",
             description: workflowData.message.content,
-            channel: workflowData.trigger_channel as any,
+            channel: workflowData.trigger_channel as "SMS" | "Email" | "WhatsApp" | "Messenger",
             timing: workflowData.message.delay || "Immediate",
           });
         }

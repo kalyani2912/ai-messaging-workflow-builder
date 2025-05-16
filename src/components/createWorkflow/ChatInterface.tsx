@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -67,7 +66,7 @@ const ChatInterface = ({ onUpdateWorkflow, initialWorkflow }: ChatInterfaceProps
       setMessages(initialWorkflow.conversationHistory);
       
       // Determine which step we're at
-      if (initialWorkflow.launch_decision) {
+      if (initialWorkflow.status === 'launched' || initialWorkflow.status === 'draft') {
         setConversationStep(5); // Completed all steps
       } else if (initialWorkflow.message.delay) {
         setConversationStep(4); // Needs launch decision
