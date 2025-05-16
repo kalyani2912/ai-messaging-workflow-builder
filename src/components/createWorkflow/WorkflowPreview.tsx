@@ -2,12 +2,13 @@
 import { ArrowDown, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
+import { WorkflowData } from "@/utils/huggingFaceApi";
 
 interface WorkflowStep {
   id: number;
   type: "trigger" | "message" | "condition";
   description: string;
-  channel?: "SMS" | "Email" | "WhatsApp";
+  channel?: "SMS" | "Email" | "WhatsApp" | "Messenger";
   timing?: string;
 }
 
@@ -47,6 +48,14 @@ const getStepIcon = (type: string, channel?: string) => {
         <div className="h-10 w-10 bg-purple-100 rounded-full flex items-center justify-center text-purple-700">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="h-5 w-5">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+          </svg>
+        </div>
+      );
+    } else if (channel === "Messenger") {
+      return (
+        <div className="h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-700">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="h-5 w-5">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
           </svg>
         </div>
       );

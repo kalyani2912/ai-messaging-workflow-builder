@@ -4,12 +4,13 @@ import Layout from "../components/Layout";
 import { Separator } from "@/components/ui/separator";
 import ChatInterface from "../components/createWorkflow/ChatInterface";
 import WorkflowPreview from "../components/createWorkflow/WorkflowPreview";
+import { WorkflowData } from "@/utils/huggingFaceApi";
 
 interface WorkflowStep {
   id: number;
   type: "trigger" | "message" | "condition";
   description: string;
-  channel?: "SMS" | "Email" | "WhatsApp";
+  channel?: "SMS" | "Email" | "WhatsApp" | "Messenger";
   timing?: string;
 }
 

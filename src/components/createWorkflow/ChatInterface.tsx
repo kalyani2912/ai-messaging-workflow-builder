@@ -1,15 +1,20 @@
-
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Send } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { getAIResponse, buildSystemPrompt, validateChannelInput, WorkflowData } from "@/utils/huggingFaceApi";
+import { parseCSV } from "@/utils/csvUtils";
 
 interface Message {
   id: number;
   sender: "user" | "ai";
   content: string;
   timestamp: string;
+}
+
+interface ChatInterfaceProps {
+  onUpdateWorkflow: (steps: WorkflowStep[]) => void;
 }
 
 interface WorkflowStep {
@@ -20,25 +25,40 @@ interface WorkflowStep {
   timing?: string;
 }
 
-interface ChatInterfaceProps {
-  onUpdateWorkflow: (steps: WorkflowStep[]) => void;
-}
-
 const ChatInterface = ({ onUpdateWorkflow }: ChatInterfaceProps) => {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 1,
       sender: "ai",
-      content: "Hi there! What kind of messaging workflow would you like to create today?",
+      content: "Hi! What keyword should trigger this workflow? (e.g., 'DEMO', 'HELP', 'OFFER')",
       timestamp: new Date().toLocaleTimeString(),
     },
   ]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Example workflow steps that will be updated as the conversation progresses
-  const [workflowSteps, setWorkflowSteps] = useState<WorkflowStep[]>([]);
+  // Our workflow data structure
+  const [workflow, setWorkflow] = useState<WorkflowData>({
+    keyword: "",
+    trigger_channel: "",
+    message: {
+      content: "",
+      channel: "",
+      delay: "",
+    },
+    contact_upload: {
+      filename: "",
+      total_contacts: 0,
+      with_consent: 0,
+      without_consent: 0,
+    },
+    launch_decision: "",
+  });
+
+  // Track the conversation state
+  const [conversationStep, setConversationStep] = useState(0);
 
   useEffect(() => {
     scrollToBottom();
@@ -53,9 +73,10 @@ const ChatInterface = ({ onUpdateWorkflow }: ChatInterfaceProps) => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!message.trim()) return;
 
+    // Add user message to chat
     const newMessage: Message = {
       id: messages.length + 1,
       sender: "user",
@@ -63,96 +84,196 @@ const ChatInterface = ({ onUpdateWorkflow }: ChatInterfaceProps) => {
       timestamp: new Date().toLocaleTimeString(),
     };
 
-    setMessages([...messages, newMessage]);
+    setMessages((prev) => [...prev, newMessage]);
+    const currentMessage = message;
     setMessage("");
 
-    // Simulate AI response based on user input
-    setTimeout(() => {
-      const aiResponse = simulateAIResponse(message);
-      setMessages((prevMessages) => [
-        ...prevMessages,
-        {
-          id: prevMessages.length + 1,
-          sender: "ai",
-          content: aiResponse.message,
-          timestamp: new Date().toLocaleTimeString(),
-        },
-      ]);
-
-      // Update workflow steps if the AI suggests changes
-      if (aiResponse.steps.length > 0) {
-        const newSteps = [...workflowSteps, ...aiResponse.steps];
-        setWorkflowSteps(newSteps);
-        onUpdateWorkflow(newSteps);
-
-        // Show toast for workflow update
-        toast({
-          title: "Workflow Updated",
-          description: `Added ${aiResponse.steps.length} new step${aiResponse.steps.length > 1 ? 's' : ''} to your workflow.`,
-        });
-      }
-    }, 1000);
+    // Process user input based on current conversation step
+    processUserInput(currentMessage);
   };
 
+  const processUserInput = async (userInput: string) => {
+    let updatedWorkflow = { ...workflow };
+    let nextStep = conversationStep + 1;
+    let aiResponseText = "";
+    let isValid = true;
+
+    // Handle different conversation steps
+    switch (conversationStep) {
+      case 0: // Keyword
+        updatedWorkflow.keyword = userInput;
+        break;
+
+      case 1: // Trigger channel
+        if (validateChannelInput(userInput)) {
+          updatedWorkflow.trigger_channel = userInput;
+        } else {
+          isValid = false;
+          aiResponseText = "Please use only SMS, WhatsApp, Email, or Messenger as the trigger channel.";
+          nextStep = conversationStep; // Stay on the same step
+        }
+        break;
+
+      case 2: // Message content
+        updatedWorkflow.message.content = userInput;
+        break;
+
+      case 3: // Message channel
+        if (validateChannelInput(userInput)) {
+          updatedWorkflow.message.channel = userInput;
+        } else {
+          isValid = false;
+          aiResponseText = "Please use only SMS, WhatsApp, Email, or Messenger as the message channel.";
+          nextStep = conversationStep; // Stay on the same step
+        }
+        break;
+
+      case 4: // Message delay
+        updatedWorkflow.message.delay = userInput;
+        break;
+
+      case 5: // CSV upload - this is handled separately via file input
+        nextStep = conversationStep; // Don't advance yet, wait for file upload
+        aiResponseText = "Please upload your CSV file using the upload button.";
+        break;
+
+      case 6: // After upload: consent confirmation
+        // This is just handling their response to consent info
+        nextStep = 7; // Move to launch decision question
+        break;
+
+      case 7: // Launch decision
+        updatedWorkflow.launch_decision = userInput;
+        aiResponseText = `Great! Your workflow has been ${userInput.toLowerCase() === "launch" ? "launched" : "saved as draft"}.`;
+        break;
+
+      default:
+        aiResponseText = "Thank you for using our workflow builder!";
+        break;
+    }
+
+    // Update workflow state
+    setWorkflow(updatedWorkflow);
+
+    // If we need to show a custom message (for validation failures)
+    if (!isValid && aiResponseText) {
+      addAIMessage(aiResponseText);
+    } else {
+      // Otherwise, get AI response based on updated workflow
+      if (conversationStep < 5 || conversationStep >= 6) {
+        try {
+          // We'll update the conversation step before the API call
+          setConversationStep(nextStep);
+          
+          if (nextStep === 5) {
+            // Prompt for file upload
+            addAIMessage("Please upload a CSV file (max 10MB) with Name, Phone, Email, Consent(Yes/No)");
+          } else {
+            // Normal AI response
+            const systemPrompt = buildSystemPrompt(updatedWorkflow);
+            const response = await getAIResponse(systemPrompt, userInput);
+            addAIMessage(response);
+          }
+          
+          // Update the workflow preview after responses
+          updateWorkflowPreview(updatedWorkflow);
+        } catch (error) {
+          console.error("Error getting AI response:", error);
+          addAIMessage("Sorry, I encountered an error. Please try again.");
+        }
+      }
+    }
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    try {
+      const result = await parseCSV(file);
+      const updatedWorkflow = {
+        ...workflow,
+        contact_upload: {
+          filename: result.filename,
+          total_contacts: result.total_contacts,
+          with_consent: result.with_consent,
+          without_consent: result.without_consent
+        }
+      };
+      
+      setWorkflow(updatedWorkflow);
+      updateWorkflowPreview(updatedWorkflow);
+      
+      // Add a message to show the CSV was processed
+      addAIMessage(`You uploaded ${result.with_consent} contacts with valid consent and ${result.without_consent} without consent. Would you like to upload consents for the remaining ${result.without_consent} contacts?`);
+      
+      // Move to the next step
+      setConversationStep(6);
+      
+    } catch (error) {
+      console.error("File upload error:", error);
+    }
+    
+    // Clear the file input
+    if (event.target) event.target.value = '';
+  };
+
+  const addAIMessage = (content: string) => {
+    setMessages(prev => [
+      ...prev, 
+      {
+        id: prev.length + 1,
+        sender: "ai",
+        content,
+        timestamp: new Date().toLocaleTimeString(),
+      }
+    ]);
+  };
+
+  const updateWorkflowPreview = (workflowData: WorkflowData) => {
+    // Convert workflow data to steps for preview
+    const steps: WorkflowStep[] = [];
+    
+    // Add trigger step if keyword exists
+    if (workflowData.keyword && workflowData.trigger_channel) {
+      steps.push({
+        id: 1,
+        type: "trigger",
+        description: `Keyword '${workflowData.keyword}' received via ${workflowData.trigger_channel}`,
+      });
+    }
+    
+    // Add message step if content exists
+    if (workflowData.message.content && workflowData.message.channel) {
+      steps.push({
+        id: 2,
+        type: "message",
+        description: workflowData.message.content,
+        channel: workflowData.message.channel as any,
+        timing: workflowData.message.delay || "Immediate",
+      });
+    }
+    
+    // Add condition for consent if file is uploaded
+    if (workflowData.contact_upload.filename) {
+      steps.push({
+        id: 3,
+        type: "condition",
+        description: `Send only to contacts with consent (${workflowData.contact_upload.with_consent}/${workflowData.contact_upload.total_contacts})`,
+      });
+    }
+    
+    onUpdateWorkflow(steps);
+  };
+  
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
       handleSendMessage();
     }
   };
 
-  // Function to simulate AI responses based on user input
-  const simulateAIResponse = (userMessage: string) => {
-    const lowerMessage = userMessage.toLowerCase();
-    let response = { message: "", steps: [] as WorkflowStep[] };
-
-    if (lowerMessage.includes("appointment") || lowerMessage.includes("remind")) {
-      response.message = "Great! I'll create an appointment reminder workflow for you. It will send an SMS 24 hours before the appointment, and follow up with an email after the appointment for feedback. Would you like to add any specific instructions for customers?";
-      response.steps = [
-        {
-          id: workflowSteps.length + 1,
-          type: "trigger",
-          description: "Appointment Scheduled",
-        },
-        {
-          id: workflowSteps.length + 2,
-          type: "message",
-          description: "Send reminder 24hrs before appointment",
-          channel: "SMS",
-          timing: "T-24hrs",
-        },
-      ];
-    } else if (lowerMessage.includes("feedback") || lowerMessage.includes("survey")) {
-      response.message = "I've added a feedback request to be sent 2 hours after the appointment. This will be sent via email with a direct link to your survey form.";
-      response.steps = [
-        {
-          id: workflowSteps.length + 1,
-          type: "message",
-          description: "Send feedback request after appointment",
-          channel: "Email",
-          timing: "T+2hrs",
-        },
-      ];
-    } else if (lowerMessage.includes("cancel") || lowerMessage.includes("reschedule")) {
-      response.message = "I'll add a condition to check if the customer cancels or wants to reschedule. If they do, we'll send them a link to reschedule at a more convenient time.";
-      response.steps = [
-        {
-          id: workflowSteps.length + 1,
-          type: "condition",
-          description: "Check for cancellation/reschedule requests",
-        },
-        {
-          id: workflowSteps.length + 2,
-          type: "message",
-          description: "Send reschedule link if requested",
-          channel: "Email",
-          timing: "Immediate",
-        },
-      ];
-    } else {
-      response.message = "I understand you want to create a messaging workflow. Could you tell me more about what type of messages you want to send? For example, appointment reminders, promotional campaigns, or customer feedback surveys?";
-    }
-
-    return response;
+  const triggerFileUpload = () => {
+    fileInputRef.current?.click();
   };
 
   return (
@@ -173,7 +294,7 @@ const ChatInterface = ({ onUpdateWorkflow }: ChatInterfaceProps) => {
             <div
               className={`max-w-[80%] p-3 rounded-lg ${
                 msg.sender === "user"
-                  ? "bg-brand-blue text-white rounded-br-none"
+                  ? "bg-primary text-primary-foreground rounded-br-none"
                   : "bg-gray-100 text-gray-800 rounded-bl-none"
               }`}
             >
@@ -189,21 +310,61 @@ const ChatInterface = ({ onUpdateWorkflow }: ChatInterfaceProps) => {
       
       <div className="p-4 border-t">
         <div className="flex space-x-2">
-          <Input
-            ref={inputRef}
-            type="text"
-            placeholder="What would you like to automate today?"
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            onKeyDown={handleKeyDown}
-            className="flex-1"
-          />
-          <Button onClick={handleSendMessage} disabled={!message.trim()}>
-            <Send className="h-4 w-4" />
-          </Button>
+          {conversationStep === 5 ? (
+            <>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".csv"
+                className="hidden"
+                onChange={handleFileUpload}
+              />
+              <Button 
+                onClick={triggerFileUpload} 
+                className="flex-1"
+              >
+                Upload CSV File (max 10MB)
+              </Button>
+            </>
+          ) : (
+            <>
+              <Input
+                ref={inputRef}
+                type="text"
+                placeholder={
+                  conversationStep === 1 || conversationStep === 3
+                    ? "Type: SMS, WhatsApp, Email, or Messenger"
+                    : conversationStep === 7
+                    ? "Type: Launch or Save as Draft"
+                    : "Type your response..."
+                }
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                onKeyDown={handleKeyDown}
+                className="flex-1"
+                disabled={conversationStep > 7}
+              />
+              <Button onClick={handleSendMessage} disabled={!message.trim() || conversationStep > 7}>
+                <Send className="h-4 w-4" />
+              </Button>
+            </>
+          )}
         </div>
         <p className="text-xs text-gray-500 mt-2">
-          Example: "Send a reminder 1 day before appointment, then follow up for feedback"
+          {conversationStep === 0
+            ? "Example: 'DEMO', 'HELP', 'PROMO'"
+            : conversationStep === 1 || conversationStep === 3
+            ? "Must be one of: SMS, WhatsApp, Email, Messenger"
+            : conversationStep === 2
+            ? "Type the message content to be sent to your contacts"
+            : conversationStep === 4
+            ? "Example: 'immediate', 'after 10 minutes', '1 day before appointment'"
+            : conversationStep === 5
+            ? "File must include Name, Phone, Email and Consent columns"
+            : conversationStep === 7
+            ? "Type 'Launch' or 'Save as Draft'"
+            : ""
+          }
         </p>
       </div>
     </div>
