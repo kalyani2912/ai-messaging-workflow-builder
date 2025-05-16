@@ -75,7 +75,7 @@ export const getAIResponse = async (systemPrompt: string, userMessage: string, c
       }
     };
 
-    const response = await fetch("https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2", {
+    const response = await fetch("https://api-inference.huggingface.co/models/mistralai/Mistral-Small-3.1-24B-Instruct-2503", {
       method: "POST",
       headers,
       body: JSON.stringify(body)
@@ -118,7 +118,7 @@ export const getWorkflowVisualization = async (workflowData: WorkflowData): Prom
       }
     };
 
-    const response = await fetch("https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2", {
+    const response = await fetch("https://api-inference.huggingface.co/models/mistralai/Mistral-Small-3.1-24B-Instruct-2503", {
       method: "POST",
       headers,
       body: JSON.stringify(body)
