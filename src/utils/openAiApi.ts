@@ -1,6 +1,6 @@
 
 // This is a placeholder for your API key - to be replaced by the user
-const OPENAI_API_KEY = "";
+const OPENAI_API_KEY = "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";
 
 interface OpenAIResponse {
   choices: {
