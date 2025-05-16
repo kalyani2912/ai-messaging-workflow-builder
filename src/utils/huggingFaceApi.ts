@@ -118,8 +118,6 @@ export const getWorkflowVisualization = async (workflowData: WorkflowData): Prom
       }
     };
 
-    openchat/openchat-3.5-0106
-
     const response = await fetch("https://api-inference.huggingface.co/models/OpenChat/openchat-3.5-0106", {
       method: "POST",
       headers,
