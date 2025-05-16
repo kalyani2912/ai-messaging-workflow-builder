@@ -48,7 +48,7 @@ const ChatInterface = ({ onUpdateWorkflow, initialWorkflow }: ChatInterfaceProps
   const [isAutoScrollEnabled, setIsAutoScrollEnabled] = useState(true);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const [showAuthDialog, setShowAuthDialog] = useState(false);
-  const [pendingAction, setPendingAction] = useState<'launch' | 'draft' | null>(null);
+  const [pendingAction, setPendingAction] = useState<'launched' | 'draft' | null>(null);
 
   // Our workflow data structure
   const [workflow, setWorkflow] = useState<WorkflowData>({
@@ -178,7 +178,7 @@ const ChatInterface = ({ onUpdateWorkflow, initialWorkflow }: ChatInterfaceProps
       steps.push({
         id: 3,
         type: "condition",
-        description: `Workflow ${workflow.launch_decision.toLowerCase() === "launch" ? "launched" : "saved as draft"}`,
+        description: `Workflow ${workflow.launch_decision.toLowerCase() === "launched" ? "launched" : "saved as draft"}`,
       });
     }
     
@@ -271,7 +271,7 @@ const ChatInterface = ({ onUpdateWorkflow, initialWorkflow }: ChatInterfaceProps
     }
   };
 
-  const handleWorkflowAction = (action: 'launch' | 'draft') => {
+  const handleWorkflowAction = (action: 'launched' | 'draft') => {
     if (!isAuthenticated()) {
       // Show the auth dialog if user is not authenticated
       setPendingAction(action);
@@ -283,13 +283,13 @@ const ChatInterface = ({ onUpdateWorkflow, initialWorkflow }: ChatInterfaceProps
     saveWorkflowToStore(action);
   };
 
-  const saveWorkflowToStore = async (action: 'launch' | 'draft') => {
+  const saveWorkflowToStore = async (action: 'launched' | 'draft') => {
     setIsProcessingWorkflow(true);
 
     try {
       const updatedWorkflow = {
         ...workflow,
-        launch_decision: action === 'launch' ? 'launched' : 'draft'
+        launch_decision: action
       };
 
       const savedWorkflow = await saveWorkflow(
@@ -300,7 +300,7 @@ const ChatInterface = ({ onUpdateWorkflow, initialWorkflow }: ChatInterfaceProps
       
       if (savedWorkflow) {
         toast({
-          title: `Workflow ${action === 'launch' ? 'launched' : 'saved as draft'}`,
+          title: `Workflow ${action === 'launched' ? 'launched' : 'saved as draft'}`,
           description: "You can view and manage it in your workflow list."
         });
         
@@ -415,7 +415,7 @@ const ChatInterface = ({ onUpdateWorkflow, initialWorkflow }: ChatInterfaceProps
               </Button>
               <Button 
                 className="flex-1" 
-                onClick={() => handleWorkflowAction('launch')}
+                onClick={() => handleWorkflowAction('launched')}
                 disabled={isProcessingWorkflow}
               >
                 Launch Workflow
