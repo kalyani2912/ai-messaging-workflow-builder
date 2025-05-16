@@ -75,7 +75,7 @@ export const getAIResponse = async (systemPrompt: string, userMessage: string, c
       }
     };
 
-    const response = await fetch("https://api-inference.huggingface.co/models/OpenChat/openchat-3.5-0106", {
+    const response = await fetch("https://api-inference.huggingface.co/models/HuggingFaceH4/zephyr-7b-beta", {
       method: "POST",
       headers,
       body: JSON.stringify(body)
@@ -117,6 +117,8 @@ export const getWorkflowVisualization = async (workflowData: WorkflowData): Prom
         return_full_text: false
       }
     };
+
+    openchat/openchat-3.5-0106
 
     const response = await fetch("https://api-inference.huggingface.co/models/OpenChat/openchat-3.5-0106", {
       method: "POST",
