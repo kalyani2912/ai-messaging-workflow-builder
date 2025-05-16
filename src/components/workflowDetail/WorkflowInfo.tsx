@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Calendar, MessageSquare, Send } from "lucide-react";
@@ -20,10 +19,11 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 
-type WorkflowType = "SMS" | "Email" | "WhatsApp" | "Multi-channel";
-type WorkflowStatus = "Active" | "Paused" | "Draft" | "Completed";
+// Export the type so it can be used in other files
+export type WorkflowType = "SMS" | "Email" | "WhatsApp" | "Messenger" | "Multi-channel";
+export type WorkflowStatus = "Active" | "Paused" | "Draft" | "Completed";
 
-interface WorkflowInfoProps {
+export interface WorkflowInfoProps {
   id: string;
   name: string;
   type: WorkflowType;

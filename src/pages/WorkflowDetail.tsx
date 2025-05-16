@@ -11,8 +11,9 @@ import { getWorkflowById, StoredWorkflow } from "@/utils/workflowStore";
 import ChatInterface from "../components/createWorkflow/ChatInterface";
 import WorkflowPreview from "../components/createWorkflow/WorkflowPreview";
 
-// Define WorkflowType type to match what's expected in WorkflowInfo
-type WorkflowType = "SMS" | "Email" | "WhatsApp" | "Messenger" | "Multi-channel";
+// Import WorkflowType from WorkflowInfo instead of defining it here
+import type { WorkflowInfoProps } from "../components/workflowDetail/WorkflowInfo";
+type WorkflowType = WorkflowInfoProps["type"];
 
 interface WorkflowStep {
   id: number;
@@ -104,8 +105,16 @@ const WorkflowDetail = () => {
     );
   }
 
-  // Convert the trigger_channel string to a WorkflowType
-  const workflowType: WorkflowType = workflow.trigger_channel as WorkflowType;
+  // Convert the trigger_channel string to a WorkflowType, ensuring it matches the expected type
+  const mapChannelToType = (channel: string): WorkflowType => {
+    if (["SMS", "Email", "WhatsApp", "Messenger", "Multi-channel"].includes(channel)) {
+      return channel as WorkflowType;
+    }
+    // Default fallback if the stored value doesn't match expected types
+    return "Multi-channel";
+  };
+
+  const workflowType = mapChannelToType(workflow.trigger_channel);
 
   return (
     <Layout>
