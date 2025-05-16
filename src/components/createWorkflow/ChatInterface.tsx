@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Send } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { getAIResponse, buildSystemPrompt, validateChannelInput, WorkflowData } from "@/utils/huggingFaceApi";
+import { getAIResponse, buildSystemPrompt, validateChannelInput, normalizeChannelInput, WorkflowData } from "@/utils/huggingFaceApi";
 import { parseCSV } from "@/utils/csvUtils";
 
 interface Message {
@@ -21,7 +21,7 @@ interface WorkflowStep {
   id: number;
   type: "trigger" | "message" | "condition";
   description: string;
-  channel?: "SMS" | "Email" | "WhatsApp";
+  channel?: "SMS" | "Email" | "WhatsApp" | "Messenger";
   timing?: string;
 }
 
@@ -45,14 +45,7 @@ const ChatInterface = ({ onUpdateWorkflow }: ChatInterfaceProps) => {
     trigger_channel: "",
     message: {
       content: "",
-      channel: "",
       delay: "",
-    },
-    contact_upload: {
-      filename: "",
-      total_contacts: 0,
-      with_consent: 0,
-      without_consent: 0,
     },
     launch_decision: "",
   });
@@ -106,10 +99,10 @@ const ChatInterface = ({ onUpdateWorkflow }: ChatInterfaceProps) => {
 
       case 1: // Trigger channel
         if (validateChannelInput(userInput)) {
-          updatedWorkflow.trigger_channel = userInput;
+          updatedWorkflow.trigger_channel = normalizeChannelInput(userInput);
         } else {
           isValid = false;
-          aiResponseText = "Please use only SMS, WhatsApp, Email, or Messenger as the trigger channel.";
+          aiResponseText = "Please enter one of the allowed channels: SMS, WhatsApp, Email, or Messenger.";
           nextStep = conversationStep; // Stay on the same step
         }
         break;
@@ -118,31 +111,11 @@ const ChatInterface = ({ onUpdateWorkflow }: ChatInterfaceProps) => {
         updatedWorkflow.message.content = userInput;
         break;
 
-      case 3: // Message channel
-        if (validateChannelInput(userInput)) {
-          updatedWorkflow.message.channel = userInput;
-        } else {
-          isValid = false;
-          aiResponseText = "Please use only SMS, WhatsApp, Email, or Messenger as the message channel.";
-          nextStep = conversationStep; // Stay on the same step
-        }
-        break;
-
-      case 4: // Message delay
+      case 3: // Message delay
         updatedWorkflow.message.delay = userInput;
         break;
 
-      case 5: // CSV upload - this is handled separately via file input
-        nextStep = conversationStep; // Don't advance yet, wait for file upload
-        aiResponseText = "Please upload your CSV file using the upload button.";
-        break;
-
-      case 6: // After upload: consent confirmation
-        // This is just handling their response to consent info
-        nextStep = 7; // Move to launch decision question
-        break;
-
-      case 7: // Launch decision
+      case 4: // Launch decision
         updatedWorkflow.launch_decision = userInput;
         aiResponseText = `Great! Your workflow has been ${userInput.toLowerCase() === "launch" ? "launched" : "saved as draft"}.`;
         break;
@@ -160,27 +133,25 @@ const ChatInterface = ({ onUpdateWorkflow }: ChatInterfaceProps) => {
       addAIMessage(aiResponseText);
     } else {
       // Otherwise, get AI response based on updated workflow
-      if (conversationStep < 5 || conversationStep >= 6) {
-        try {
-          // We'll update the conversation step before the API call
-          setConversationStep(nextStep);
-          
-          if (nextStep === 5) {
-            // Prompt for file upload
-            addAIMessage("Please upload a CSV file (max 10MB) with Name, Phone, Email, Consent(Yes/No)");
-          } else {
-            // Normal AI response
-            const systemPrompt = buildSystemPrompt(updatedWorkflow);
-            const response = await getAIResponse(systemPrompt, userInput);
-            addAIMessage(response);
-          }
-          
-          // Update the workflow preview after responses
-          updateWorkflowPreview(updatedWorkflow);
-        } catch (error) {
-          console.error("Error getting AI response:", error);
-          addAIMessage("Sorry, I encountered an error. Please try again.");
+      try {
+        // We'll update the conversation step before the API call
+        setConversationStep(nextStep);
+        
+        if (nextStep > 4) {
+          // We're done with the questions
+          addAIMessage("Thank you for creating this workflow! It has been processed according to your preferences.");
+        } else {
+          // Normal AI response
+          const systemPrompt = buildSystemPrompt(updatedWorkflow);
+          const response = await getAIResponse(systemPrompt, userInput);
+          addAIMessage(response);
         }
+        
+        // Update the workflow preview after responses
+        updateWorkflowPreview(updatedWorkflow);
+      } catch (error) {
+        console.error("Error getting AI response:", error);
+        addAIMessage("Sorry, I encountered an error. Please try again.");
       }
     }
   };
@@ -191,24 +162,9 @@ const ChatInterface = ({ onUpdateWorkflow }: ChatInterfaceProps) => {
     
     try {
       const result = await parseCSV(file);
-      const updatedWorkflow = {
-        ...workflow,
-        contact_upload: {
-          filename: result.filename,
-          total_contacts: result.total_contacts,
-          with_consent: result.with_consent,
-          without_consent: result.without_consent
-        }
-      };
-      
-      setWorkflow(updatedWorkflow);
-      updateWorkflowPreview(updatedWorkflow);
       
       // Add a message to show the CSV was processed
       addAIMessage(`You uploaded ${result.with_consent} contacts with valid consent and ${result.without_consent} without consent. Would you like to upload consents for the remaining ${result.without_consent} contacts?`);
-      
-      // Move to the next step
-      setConversationStep(6);
       
     } catch (error) {
       console.error("File upload error:", error);
@@ -244,22 +200,22 @@ const ChatInterface = ({ onUpdateWorkflow }: ChatInterfaceProps) => {
     }
     
     // Add message step if content exists
-    if (workflowData.message.content && workflowData.message.channel) {
+    if (workflowData.message.content) {
       steps.push({
         id: 2,
         type: "message",
         description: workflowData.message.content,
-        channel: workflowData.message.channel as any,
+        channel: workflowData.trigger_channel as any,
         timing: workflowData.message.delay || "Immediate",
       });
     }
     
-    // Add condition for consent if file is uploaded
-    if (workflowData.contact_upload.filename) {
+    // Add launch decision if it exists
+    if (workflowData.launch_decision) {
       steps.push({
         id: 3,
         type: "condition",
-        description: `Send only to contacts with consent (${workflowData.contact_upload.with_consent}/${workflowData.contact_upload.total_contacts})`,
+        description: `Workflow ${workflowData.launch_decision.toLowerCase() === "launch" ? "launched" : "saved as draft"}`,
       });
     }
     
@@ -310,58 +266,45 @@ const ChatInterface = ({ onUpdateWorkflow }: ChatInterfaceProps) => {
       
       <div className="p-4 border-t">
         <div className="flex space-x-2">
-          {conversationStep === 5 ? (
-            <>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".csv"
-                className="hidden"
-                onChange={handleFileUpload}
-              />
-              <Button 
-                onClick={triggerFileUpload} 
-                className="flex-1"
-              >
-                Upload CSV File (max 10MB)
-              </Button>
-            </>
-          ) : (
-            <>
-              <Input
-                ref={inputRef}
-                type="text"
-                placeholder={
-                  conversationStep === 1 || conversationStep === 3
-                    ? "Type: SMS, WhatsApp, Email, or Messenger"
-                    : conversationStep === 7
-                    ? "Type: Launch or Save as Draft"
-                    : "Type your response..."
-                }
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                onKeyDown={handleKeyDown}
-                className="flex-1"
-                disabled={conversationStep > 7}
-              />
-              <Button onClick={handleSendMessage} disabled={!message.trim() || conversationStep > 7}>
-                <Send className="h-4 w-4" />
-              </Button>
-            </>
-          )}
+          <>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv"
+              className="hidden"
+              onChange={handleFileUpload}
+            />
+            <Input
+              ref={inputRef}
+              type="text"
+              placeholder={
+                conversationStep === 1
+                  ? "Type: SMS, WhatsApp, Email, or Messenger"
+                  : conversationStep === 4
+                  ? "Type: Launch or Save as Draft"
+                  : "Type your response..."
+              }
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              onKeyDown={handleKeyDown}
+              className="flex-1"
+              disabled={conversationStep > 4}
+            />
+            <Button onClick={handleSendMessage} disabled={!message.trim() || conversationStep > 4}>
+              <Send className="h-4 w-4" />
+            </Button>
+          </>
         </div>
         <p className="text-xs text-gray-500 mt-2">
           {conversationStep === 0
             ? "Example: 'DEMO', 'HELP', 'PROMO'"
-            : conversationStep === 1 || conversationStep === 3
+            : conversationStep === 1
             ? "Must be one of: SMS, WhatsApp, Email, Messenger"
             : conversationStep === 2
-            ? "Type the message content to be sent to your contacts"
-            : conversationStep === 4
+            ? "Type the message content to be sent when the keyword is triggered"
+            : conversationStep === 3
             ? "Example: 'immediate', 'after 10 minutes', '1 day before appointment'"
-            : conversationStep === 5
-            ? "File must include Name, Phone, Email and Consent columns"
-            : conversationStep === 7
+            : conversationStep === 4
             ? "Type 'Launch' or 'Save as Draft'"
             : ""
           }
