@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "../components/Layout";
@@ -74,7 +73,7 @@ const CreateWorkflow = () => {
           </div>
           
           {/* Workflow preview takes 25% - fixed position on larger screens */}
-          <div className="lg:col-span-1 h-full overflow-hidden bg-gray-50 border-l sticky top-0">
+          <div className="lg:col-span-1 h-full overflow-hidden bg-gray-50 border-l">
             <WorkflowPreview steps={workflowSteps} />
           </div>
         </div>

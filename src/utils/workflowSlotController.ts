@@ -1,5 +1,5 @@
 
-import { WorkflowData, validateWorkflowTypeInput, validateChannelInput, workflowSlotDefinition } from "./huggingFaceApi";
+import { WorkflowData, validateWorkflowTypeInput, validateChannelInput, workflowSlotDefinition } from "./openAiApi";
 
 // Clone the initial workflow slot definition
 export const initializeWorkflowState = (): any => {

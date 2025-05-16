@@ -10,7 +10,7 @@ import {
   buildSystemPrompt, 
   WorkflowData,
   generateContextualPrompt,
-} from "@/utils/huggingFaceApi";
+} from "@/utils/openAiApi";
 import { 
   initializeWorkflowState,
   getNextStep,
@@ -69,8 +69,8 @@ const ChatInterface = ({ onUpdateWorkflow, initialWorkflow }: ChatInterfaceProps
     keyword: initialWorkflow?.keyword || "",
     trigger_channel: initialWorkflow?.trigger_channel || "",
     message: {
-      content: initialWorkflow?.message.content || "",
-      delay: initialWorkflow?.message.delay || "",
+      content: initialWorkflow?.message?.content || "",
+      delay: initialWorkflow?.message?.delay || "",
     },
     launch_decision: initialWorkflow?.status || "",
   });
