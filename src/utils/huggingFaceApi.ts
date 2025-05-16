@@ -1,6 +1,6 @@
 
 // This is a placeholder for your API key - to be replaced by the user
-const HUGGINGFACE_API_KEY = "YOUR_HF_API_KEY";
+const HUGGINGFACE_API_KEY = "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";
 
 interface HuggingFaceResponse {
   generated_text: string;
