@@ -75,7 +75,7 @@ export const getAIResponse = async (systemPrompt: string, userMessage: string, c
       }
     };
 
-    const response = await fetch("https://api-inference.huggingface.co/models/HuggingFaceH4/zephyr-7b-beta", {
+    const response = await fetch("https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2", {
       method: "POST",
       headers,
       body: JSON.stringify(body)
@@ -118,7 +118,7 @@ export const getWorkflowVisualization = async (workflowData: WorkflowData): Prom
       }
     };
 
-    const response = await fetch("https://api-inference.huggingface.co/models/OpenChat/openchat-3.5-0106", {
+    const response = await fetch("https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2", {
       method: "POST",
       headers,
       body: JSON.stringify(body)
@@ -144,7 +144,7 @@ ${workflowData.message?.content ? `→ 🟡 Action: Send message ${workflowData.
 
 // Function to build the system prompt
 export const buildSystemPrompt = (): string => {
-  return `You are a structured assistant that helps users create messaging automations. At the beginning, ask the user to select the automation type. Only accept one selection and move forward accordingly. Ask for one input at a time. Do NOT simulate user input or confirmations. Do NOT generate example users. Only collect and confirm user choices. Recommend adding opt-out messages. Keep answers short and clear.`;
+  return `You are a structured assistant that helps users build messaging automations by asking one question at a time. Start by asking the user to select the type of automation: 1. Keyword Trigger Automation 2. Appointment Reminder. Once the user selects, follow the correct flow for that type. Ask each question in a short, clear sentence. Do not simulate or repeat the user’s input. Do not assume or add imaginary confirmations like “User input: ...” or “Automation has been created.” Only ask the next question in the setup flow. Your goal is to collect fields like keyword, channel, message, and delay—one step at a time. Recommend adding an opt-out message when collecting user-generated messages.`;
 };
 
 // Types for the workflow data
