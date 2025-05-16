@@ -52,6 +52,14 @@ const getStepIcon = (type: string, channel?: string) => {
           </svg>
         </div>
       );
+    } else if (channel === "WhatsApp") {
+      return (
+        <div className="h-10 w-10 bg-green-100 rounded-full flex items-center justify-center text-green-700">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="h-5 w-5">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+          </svg>
+        </div>
+      );
     } else if (channel === "Messenger") {
       return (
         <div className="h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-700">
@@ -89,47 +97,47 @@ const WorkflowPreview = ({ steps }: WorkflowPreviewProps) => {
         </p>
       </div>
 
-      <ScrollArea className="flex-1 overflow-auto">
-        <div className="p-4">
-          {steps.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-gray-500 mb-2">No steps yet</p>
-              <p className="text-sm text-gray-400">
-                Start chatting to build your workflow
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-6">
-              {steps.map((step, index) => (
-                <div key={step.id} className="relative">
-                  <div className="flex items-start gap-4">
-                    {getStepIcon(step.type, step.channel)}
-                    <div className="flex-1">
-                      <div className="bg-white p-3 rounded-lg border shadow-sm">
-                        <p className="font-medium mb-1">{step.description}</p>
-                        {step.channel && (
-                          <div className="flex items-center justify-between">
+      <ScrollArea className="flex-1 p-4">
+        {steps.length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-gray-500 mb-2">No steps yet</p>
+            <p className="text-sm text-gray-400">
+              Start chatting to build your workflow
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {steps.map((step, index) => (
+              <div key={step.id} className="relative">
+                <div className="flex items-start gap-4">
+                  {getStepIcon(step.type, step.channel)}
+                  <div className="flex-1">
+                    <div className="bg-white p-3 rounded-lg border shadow-sm">
+                      <p className="font-medium mb-1">{step.description}</p>
+                      {(step.channel || step.timing) && (
+                        <div className="flex items-center justify-between flex-wrap gap-2">
+                          {step.channel && (
                             <span className="text-sm text-gray-500">
                               Channel: {step.channel}
                             </span>
-                            {step.timing && (
-                              <span className="text-sm bg-gray-100 px-2 py-1 rounded">
-                                {step.timing}
-                              </span>
-                            )}
-                          </div>
-                        )}
-                      </div>
+                          )}
+                          {step.timing && (
+                            <span className="text-sm bg-gray-100 px-2 py-1 rounded">
+                              {step.timing}
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
-                  {index < steps.length - 1 && (
-                    <div className="absolute left-5 top-12 h-8 w-0 border-l-2 border-gray-200"></div>
-                  )}
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
+                {index < steps.length - 1 && (
+                  <div className="absolute left-5 top-12 h-8 w-0 border-l-2 border-gray-200"></div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </ScrollArea>
 
       <div className="p-4 border-t bg-white sticky bottom-0">

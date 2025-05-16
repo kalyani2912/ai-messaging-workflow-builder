@@ -29,7 +29,7 @@ export const parseCSV = (file: File): Promise<CSVData> => {
       complete: (results) => {
         // Check if required columns exist
         const headers = results.meta.fields || [];
-        const requiredColumns = ['Name', 'Phone', 'Email', 'Consent'];
+        const requiredColumns = ['Name', 'Phone'];
         
         const missingColumns = requiredColumns.filter(col => !headers.includes(col));
         
@@ -49,7 +49,15 @@ export const parseCSV = (file: File): Promise<CSVData> => {
         let withoutConsent = 0;
         
         data.forEach(row => {
-          if (row.Consent && (row.Consent.toLowerCase() === 'yes' || row.Consent === true || row.Consent === 1)) {
+          // Check any consent column
+          const hasConsent = row['Opt-in SMS'] === 'Yes' || 
+                            row['Opt-in WhatsApp'] === 'Yes' || 
+                            row['Opt-in Email'] === 'Yes' ||
+                            row.Consent === 'Yes' ||
+                            row.Consent === true ||
+                            row.Consent === 1;
+          
+          if (hasConsent) {
             withConsent++;
           } else {
             withoutConsent++;
@@ -74,4 +82,14 @@ export const parseCSV = (file: File): Promise<CSVData> => {
       }
     });
   });
+};
+
+// Generate a sample CSV string for appointment reminders
+export const generateSampleCSV = (): string => {
+  return `Name,Phone,Preferred Channel,Opt-in SMS,Opt-in WhatsApp,Opt-in Email,Appointment Type,Appointment Date & Time,Notes
+John Doe,+15551234567,SMS,Yes,No,Yes,Dental Checkup,2023-06-15 10:00:00,First time patient
+Jane Smith,+15557654321,WhatsApp,Yes,Yes,Yes,Haircut,2023-06-16 14:30:00,Prefers stylist Mark
+Robert Johnson,+15559876543,Email,Yes,No,Yes,Medical Consultation,2023-06-17 09:15:00,Annual checkup
+Emily Williams,+15551112222,SMS,Yes,No,No,Car Service,2023-06-18 13:45:00,Oil change
+`;
 };

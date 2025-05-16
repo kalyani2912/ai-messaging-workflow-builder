@@ -67,7 +67,7 @@ const CreateWorkflow = () => {
         <Separator className="mb-4" />
         
         {/* Fixed height container for the chat and preview with overflow hidden */}
-        <div className="flex-1 grid grid-cols-1 lg:grid-cols-4 gap-0 border rounded-lg shadow-sm overflow-hidden">
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-4 gap-0 border rounded-lg shadow-sm overflow-hidden bg-white">
           {/* Chat interface takes 75% */}
           <div className="lg:col-span-3 h-full overflow-hidden">
             <ChatInterface onUpdateWorkflow={handleUpdateWorkflow} />
