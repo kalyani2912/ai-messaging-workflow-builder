@@ -15,6 +15,8 @@ import {
 import { parseCSV } from "@/utils/csvUtils";
 import { saveWorkflow, StoredWorkflow } from "@/utils/workflowStore";
 import { isAuthenticated } from "@/utils/userStore";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { AlertDialog, AlertDialogContent, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter } from "@/components/ui/alert-dialog";
 
 interface Message {
   id: number;
@@ -43,6 +45,10 @@ const ChatInterface = ({ onUpdateWorkflow, initialWorkflow }: ChatInterfaceProps
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
+  const [isAutoScrollEnabled, setIsAutoScrollEnabled] = useState(true);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const [showAuthDialog, setShowAuthDialog] = useState(false);
+  const [pendingAction, setPendingAction] = useState<'launch' | 'draft' | null>(null);
 
   // Our workflow data structure
   const [workflow, setWorkflow] = useState<WorkflowData>({
@@ -58,6 +64,7 @@ const ChatInterface = ({ onUpdateWorkflow, initialWorkflow }: ChatInterfaceProps
   // Track the conversation state
   const [conversationStep, setConversationStep] = useState(0);
   const [isProcessingWorkflow, setIsProcessingWorkflow] = useState(false);
+  const [isWorkflowComplete, setIsWorkflowComplete] = useState(false);
 
   useEffect(() => {
     // Set up initial messages
@@ -68,6 +75,7 @@ const ChatInterface = ({ onUpdateWorkflow, initialWorkflow }: ChatInterfaceProps
       // Determine which step we're at
       if (initialWorkflow.status === 'launched' || initialWorkflow.status === 'draft') {
         setConversationStep(5); // Completed all steps
+        setIsWorkflowComplete(true);
       } else if (initialWorkflow.message.delay) {
         setConversationStep(4); // Needs launch decision
       } else if (initialWorkflow.message.content) {
@@ -90,9 +98,31 @@ const ChatInterface = ({ onUpdateWorkflow, initialWorkflow }: ChatInterfaceProps
     }
   }, [initialWorkflow]);
 
+  // Add scroll event listener to detect manual scrolling
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    const scrollArea = scrollAreaRef.current;
+    
+    if (!scrollArea) return;
+    
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = scrollArea;
+      // If user has scrolled up, disable auto-scroll
+      // If user has scrolled to bottom, enable auto-scroll
+      const isNearBottom = scrollHeight - scrollTop - clientHeight < 50;
+      
+      setIsAutoScrollEnabled(isNearBottom);
+    };
+    
+    scrollArea.addEventListener("scroll", handleScroll);
+    return () => scrollArea.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // Effect to scroll to bottom only when enabled
+  useEffect(() => {
+    if (isAutoScrollEnabled && messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages, isAutoScrollEnabled]);
 
   useEffect(() => {
     // Focus the input when the component mounts
@@ -155,10 +185,6 @@ const ChatInterface = ({ onUpdateWorkflow, initialWorkflow }: ChatInterfaceProps
     return steps;
   };
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
   const handleSendMessage = async () => {
     if (!message.trim()) return;
 
@@ -206,61 +232,12 @@ const ChatInterface = ({ onUpdateWorkflow, initialWorkflow }: ChatInterfaceProps
 
       case 3: // Message delay
         updatedWorkflow.message.delay = userInput;
-        break;
-
-      case 4: // Launch decision
-        updatedWorkflow.launch_decision = userInput;
-        if (userInput.toLowerCase().includes("launch")) {
-          updatedWorkflow.launch_decision = "launched";
-        } else {
-          updatedWorkflow.launch_decision = "draft";
-        }
-        
-        aiResponseText = `Great! Your workflow has been ${updatedWorkflow.launch_decision}.`;
-        
-        // If the user is authenticated, save the workflow
-        if (isAuthenticated()) {
-          setIsProcessingWorkflow(true);
-          
-          try {
-            const savedWorkflow = await saveWorkflow(
-              updatedWorkflow, 
-              updatedWorkflow.launch_decision as 'draft' | 'launched', 
-              [...messages, {
-                id: messages.length + 1,
-                sender: "user",
-                content: userInput,
-                timestamp: new Date().toLocaleTimeString(),
-              }]
-            );
-            
-            if (savedWorkflow) {
-              // Add a message after a short delay to give the impression of processing
-              setTimeout(() => {
-                addAIMessage(`Your workflow has been ${updatedWorkflow.launch_decision}. You can view and manage it in your workflow list.`);
-                // Redirect to workflows page after a short delay
-                setTimeout(() => {
-                  navigate("/workflows");
-                }, 2000);
-              }, 1000);
-            }
-          } catch (error) {
-            console.error("Error saving workflow:", error);
-            addAIMessage("There was an error saving your workflow. Please try again.");
-          } finally {
-            setIsProcessingWorkflow(false);
-          }
-        } else {
-          // If not authenticated, prompt to sign up or log in
-          setTimeout(() => {
-            addAIMessage("To save your workflow, please sign in or create an account.");
-            // Add sign in/up buttons or redirect
-          }, 1000);
-        }
+        // Mark workflow as complete to show save buttons
+        setIsWorkflowComplete(true);
         break;
 
       default:
-        aiResponseText = "Thank you for using our workflow builder!";
+        aiResponseText = "Thank you for using our workflow builder.";
         break;
     }
 
@@ -276,10 +253,10 @@ const ChatInterface = ({ onUpdateWorkflow, initialWorkflow }: ChatInterfaceProps
         // We'll update the conversation step before the API call
         setConversationStep(nextStep);
         
-        if (nextStep > 4) {
+        if (nextStep > 3) {
           // We're done with the questions
           if (!aiResponseText) {
-            addAIMessage("Thank you for creating this workflow! It has been processed according to your preferences.");
+            addAIMessage("Your workflow is now complete. You can launch it now or save it as a draft.");
           }
         } else {
           // Normal AI response
@@ -292,6 +269,60 @@ const ChatInterface = ({ onUpdateWorkflow, initialWorkflow }: ChatInterfaceProps
         addAIMessage("Sorry, I encountered an error. Please try again.");
       }
     }
+  };
+
+  const handleWorkflowAction = (action: 'launch' | 'draft') => {
+    if (!isAuthenticated()) {
+      // Show the auth dialog if user is not authenticated
+      setPendingAction(action);
+      setShowAuthDialog(true);
+      return;
+    }
+
+    // User is authenticated, proceed with saving
+    saveWorkflowToStore(action);
+  };
+
+  const saveWorkflowToStore = async (action: 'launch' | 'draft') => {
+    setIsProcessingWorkflow(true);
+
+    try {
+      const updatedWorkflow = {
+        ...workflow,
+        launch_decision: action === 'launch' ? 'launched' : 'draft'
+      };
+
+      const savedWorkflow = await saveWorkflow(
+        updatedWorkflow,
+        action, 
+        messages
+      );
+      
+      if (savedWorkflow) {
+        toast({
+          title: `Workflow ${action === 'launch' ? 'launched' : 'saved as draft'}`,
+          description: "You can view and manage it in your workflow list."
+        });
+        
+        // Redirect to workflows page
+        navigate("/workflows");
+      }
+    } catch (error) {
+      console.error("Error saving workflow:", error);
+      toast({
+        title: "Error saving workflow",
+        description: "Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsProcessingWorkflow(false);
+    }
+  };
+
+  const handleAuthAction = (action: 'signin' | 'signup') => {
+    // Close dialog and navigate to sign in/up page
+    setShowAuthDialog(false);
+    navigate(action === 'signin' ? '/signin' : '/signup');
   };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -345,78 +376,118 @@ const ChatInterface = ({ onUpdateWorkflow, initialWorkflow }: ChatInterfaceProps
         </p>
       </div>
       
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.map((msg) => (
-          <div
-            key={msg.id}
-            className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}
-          >
+      <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
+        <div className="space-y-4 min-h-[calc(100%-2rem)]">
+          {messages.map((msg) => (
             <div
-              className={`max-w-[80%] p-3 rounded-lg ${
-                msg.sender === "user"
-                  ? "bg-primary text-primary-foreground rounded-br-none"
-                  : "bg-gray-100 text-gray-800 rounded-bl-none"
-              }`}
+              key={msg.id}
+              className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}
             >
-              <p className="mb-1">{msg.content}</p>
-              <p className={`text-xs ${msg.sender === "user" ? "text-blue-100" : "text-gray-500"} text-right`}>
-                {msg.timestamp}
-              </p>
+              <div
+                className={`max-w-[80%] p-3 rounded-lg ${
+                  msg.sender === "user"
+                    ? "bg-primary text-primary-foreground rounded-br-none"
+                    : "bg-gray-100 text-gray-800 rounded-bl-none"
+                }`}
+              >
+                <p className="mb-1">{msg.content}</p>
+                <p className={`text-xs ${msg.sender === "user" ? "text-blue-100" : "text-gray-500"} text-right`}>
+                  {msg.timestamp}
+                </p>
+              </div>
             </div>
-          </div>
-        ))}
-        <div ref={messagesEndRef} />
-      </div>
+          ))}
+          <div ref={messagesEndRef} />
+        </div>
+      </ScrollArea>
       
       <div className="p-4 border-t">
-        <div className="flex space-x-2">
-          <>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".csv"
-              className="hidden"
-              onChange={handleFileUpload}
-            />
-            <Input
-              ref={inputRef}
-              type="text"
-              placeholder={
-                conversationStep === 1
-                  ? "Type: SMS, WhatsApp, Email, or Messenger"
-                  : conversationStep === 4
-                  ? "Type: Launch or Save as Draft"
-                  : "Type your response..."
+        {isWorkflowComplete ? (
+          <div className="space-y-3">
+            <div className="flex justify-between gap-3">
+              <Button 
+                className="flex-1" 
+                variant="outline" 
+                onClick={() => handleWorkflowAction('draft')}
+                disabled={isProcessingWorkflow}
+              >
+                Save as Draft
+              </Button>
+              <Button 
+                className="flex-1" 
+                onClick={() => handleWorkflowAction('launch')}
+                disabled={isProcessingWorkflow}
+              >
+                Launch Workflow
+              </Button>
+            </div>
+            <p className="text-xs text-gray-500 text-center">
+              {isAuthenticated() 
+                ? "Your workflow will be saved to your account." 
+                : "Sign in to save your workflow and access it later."}
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <div className="flex space-x-2">
+              <>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".csv"
+                  className="hidden"
+                  onChange={handleFileUpload}
+                />
+                <Input
+                  ref={inputRef}
+                  type="text"
+                  placeholder={
+                    conversationStep === 1
+                      ? "Type: SMS, WhatsApp, Email, or Messenger"
+                      : "Type your response..."
+                  }
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  className="flex-1"
+                  disabled={isProcessingWorkflow}
+                />
+                <Button 
+                  onClick={handleSendMessage} 
+                  disabled={!message.trim() || isProcessingWorkflow}
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
+              </>
+            </div>
+            <p className="text-xs text-gray-500 mt-2">
+              {conversationStep === 0
+                ? "Example: 'DEMO', 'HELP', 'PROMO'"
+                : conversationStep === 1
+                ? "Must be one of: SMS, WhatsApp, Email, Messenger"
+                : conversationStep === 2
+                ? "Type the message content to be sent when the keyword is triggered"
+                : conversationStep === 3
+                ? "Example: 'immediate', 'after 10 minutes', '1 day before appointment'"
+                : ""
               }
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              onKeyDown={handleKeyDown}
-              className="flex-1"
-              disabled={conversationStep > 4 || isProcessingWorkflow}
-            />
-            <Button 
-              onClick={handleSendMessage} 
-              disabled={!message.trim() || conversationStep > 4 || isProcessingWorkflow}
-            >
-              <Send className="h-4 w-4" />
-            </Button>
-          </>
-        </div>
-        <p className="text-xs text-gray-500 mt-2">
-          {conversationStep === 0
-            ? "Example: 'DEMO', 'HELP', 'PROMO'"
-            : conversationStep === 1
-            ? "Must be one of: SMS, WhatsApp, Email, Messenger"
-            : conversationStep === 2
-            ? "Type the message content to be sent when the keyword is triggered"
-            : conversationStep === 3
-            ? "Example: 'immediate', 'after 10 minutes', '1 day before appointment'"
-            : conversationStep === 4
-            ? "Type 'Launch' or 'Save as Draft'"
-            : ""
-          }
-        </p>
+            </p>
+          </div>
+        )}
       </div>
+
+      <AlertDialog open={showAuthDialog} onOpenChange={setShowAuthDialog}>
+        <AlertDialogContent>
+          <AlertDialogTitle>Authentication Required</AlertDialogTitle>
+          <AlertDialogDescription>
+            You need to sign in or create an account to save your workflow.
+          </AlertDialogDescription>
+          <AlertDialogFooter className="gap-2 flex-col sm:flex-row">
+            <Button variant="outline" onClick={() => handleAuthAction('signin')} className="flex-1">Sign In</Button>
+            <Button onClick={() => handleAuthAction('signup')} className="flex-1">Create Account</Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

@@ -15,10 +15,10 @@ export const getAIResponse = async (systemPrompt: string, userMessage: string): 
     };
 
     const body = {
-      inputs: `${systemPrompt}\nUser: ${userMessage}`,
+      inputs: `${systemPrompt}\nUser: ${userMessage}\nAssistant:`,
       parameters: {
         max_new_tokens: 200,
-        temperature: 0.7,
+        temperature: 0.5,  // Reduced temperature for more focused responses
         return_full_text: false
       }
     };
@@ -36,7 +36,7 @@ export const getAIResponse = async (systemPrompt: string, userMessage: string): 
     const data: HuggingFaceResponse[] = await response.json();
     
     if (!data || !data[0]?.generated_text) {
-      return "I'm having trouble understanding. Could you try again?";
+      return "I'm having trouble. Could you try again?";
     }
     
     return data[0].generated_text.trim();
@@ -54,14 +54,14 @@ export const getWorkflowVisualization = async (workflowData: WorkflowData): Prom
       "Content-Type": "application/json"
     };
 
-    const systemPrompt = "You are a workflow visualizer. Based on this partial workflow JSON, return a summary of all confirmed steps so far in the format of readable nodes that can be shown in a flow preview.";
+    const systemPrompt = "Generate a concise, step-by-step workflow visualization based on this JSON data. Format with emojis: 🟢 for triggers, 🟡 for actions, 🔵 for conditions. Keep it short and structured.";
     const userMessage = JSON.stringify(workflowData, null, 2);
     
     const body = {
-      inputs: `${systemPrompt}\nUser: ${userMessage}`,
+      inputs: `${systemPrompt}\nWorkflow JSON: ${userMessage}\nVisualization:`,
       parameters: {
         max_new_tokens: 200,
-        temperature: 0.3,
+        temperature: 0.2,
         return_full_text: false
       }
     };
@@ -92,7 +92,7 @@ ${workflowData.message?.content ? `→ 🟡 Action: Send message ${workflowData.
 
 // Function to build the system prompt based on the current workflow state
 export const buildSystemPrompt = (workflow: WorkflowData): string => {
-  let prompt = "You are an assistant that helps users build a keyword-triggered messaging workflow.";
+  let prompt = "You are a helpful assistant that builds messaging workflows in a concise, neutral tone. Keep responses short (1-2 sentences).";
   
   // Add information about what's been collected so far
   const collectedInfo = [];
@@ -119,17 +119,15 @@ export const buildSystemPrompt = (workflow: WorkflowData): string => {
   
   // Determine the next question based on what's missing
   if (!workflow.keyword) {
-    prompt += " Ask what keyword should trigger this workflow (e.g., 'DEMO', 'HELP', 'OFFER').";
+    prompt += " Ask what keyword should trigger this workflow.";
   } else if (!workflow.trigger_channel) {
     prompt += " Ask which channel should the user send this keyword from (SMS, WhatsApp, Email, Messenger only).";
   } else if (!workflow.message.content) {
     prompt += " Ask what message should be sent in response when someone sends the keyword.";
   } else if (!workflow.message.delay) {
-    prompt += " Ask if they would like to delay this message (e.g., 'immediate', 'after 10 minutes').";
-  } else if (!workflow.launch_decision) {
-    prompt += " Ask if they would like to launch this workflow now or save as draft.";
+    prompt += " Ask if they would like to delay this message.";
   } else {
-    prompt += " Thank them for creating the workflow and inform them it has been processed according to their preference.";
+    prompt += " Inform them the workflow configuration is complete.";
   }
   
   return prompt;
@@ -152,5 +150,12 @@ export const validateChannelInput = (input: string): boolean => {
 };
 
 export const normalizeChannelInput = (input: string): string => {
-  return input.toUpperCase();
+  const map: Record<string, string> = {
+    "SMS": "SMS",
+    "WHATSAPP": "WhatsApp",
+    "EMAIL": "Email",
+    "MESSENGER": "Messenger"
+  };
+  
+  return map[input.toUpperCase()] || input.toUpperCase();
 };

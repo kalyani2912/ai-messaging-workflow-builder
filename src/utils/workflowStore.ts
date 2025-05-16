@@ -32,70 +32,75 @@ export const saveWorkflow = (
   workflowData: WorkflowData, 
   status: 'draft' | 'launched',
   conversationHistory: ConversationItem[]
-): StoredWorkflow | null => {
-  const currentUser = getCurrentUser();
-  
-  if (!currentUser) {
-    toast({
-      title: "Authentication required",
-      description: "Please sign in to save workflows.",
-      variant: "destructive"
-    });
-    return null;
-  }
-  
-  // Check if this is an update to an existing workflow
-  const existingIndex = workflows.findIndex(
-    w => w.userId === currentUser.id && w.keyword === workflowData.keyword
-  );
-  
-  const now = new Date().toISOString();
-  
-  if (existingIndex >= 0) {
-    // Update existing workflow
-    const updated = {
-      ...workflows[existingIndex],
-      ...workflowData,
-      status,
-      conversationHistory,
-      updatedAt: now
-    };
+): Promise<StoredWorkflow | null> => {
+  return new Promise((resolve) => {
+    const currentUser = getCurrentUser();
     
-    workflows[existingIndex] = updated;
+    if (!currentUser) {
+      toast({
+        title: "Authentication required",
+        description: "Please sign in to save workflows.",
+        variant: "destructive"
+      });
+      resolve(null);
+      return;
+    }
     
-    // Update localStorage
-    localStorage.setItem('workflows', JSON.stringify(workflows));
+    // Check if this is an update to an existing workflow
+    const existingIndex = workflows.findIndex(
+      w => w.userId === currentUser.id && w.keyword === workflowData.keyword
+    );
     
-    toast({
-      title: "Workflow updated",
-      description: `Workflow "${workflowData.keyword}" has been updated.`,
-    });
+    const now = new Date().toISOString();
     
-    return updated;
-  } else {
-    // Create new workflow
-    const newWorkflow: StoredWorkflow = {
-      id: `workflow_${Date.now()}`,
-      userId: currentUser.id,
-      ...workflowData,
-      status,
-      conversationHistory,
-      createdAt: now,
-      updatedAt: now
-    };
-    
-    workflows.push(newWorkflow);
-    
-    // Update localStorage
-    localStorage.setItem('workflows', JSON.stringify(workflows));
-    
-    toast({
-      title: "Workflow saved",
-      description: `Workflow "${workflowData.keyword}" has been saved as ${status}.`,
-    });
-    
-    return newWorkflow;
-  }
+    if (existingIndex >= 0) {
+      // Update existing workflow
+      const updated = {
+        ...workflows[existingIndex],
+        ...workflowData,
+        status,
+        conversationHistory,
+        updatedAt: now
+      };
+      
+      workflows[existingIndex] = updated;
+      
+      // Update localStorage
+      localStorage.setItem('workflows', JSON.stringify(workflows));
+      
+      toast({
+        title: "Workflow updated",
+        description: `Workflow "${workflowData.keyword}" has been updated.`,
+      });
+      
+      // Simulate network delay
+      setTimeout(() => resolve(updated), 500);
+    } else {
+      // Create new workflow
+      const newWorkflow: StoredWorkflow = {
+        id: `workflow_${Date.now()}`,
+        userId: currentUser.id,
+        ...workflowData,
+        status,
+        conversationHistory,
+        createdAt: now,
+        updatedAt: now
+      };
+      
+      workflows.push(newWorkflow);
+      
+      // Update localStorage
+      localStorage.setItem('workflows', JSON.stringify(workflows));
+      
+      toast({
+        title: "Workflow saved",
+        description: `Workflow "${workflowData.keyword}" has been saved as ${status}.`,
+      });
+      
+      // Simulate network delay
+      setTimeout(() => resolve(newWorkflow), 500);
+    }
+  });
 };
 
 export const getWorkflows = (): StoredWorkflow[] => {

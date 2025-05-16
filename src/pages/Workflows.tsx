@@ -14,11 +14,17 @@ import {
   TableRow 
 } from "@/components/ui/table";
 import { formatDistanceToNow } from "date-fns";
+import { isAuthenticated } from "@/utils/userStore";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const Workflows = () => {
   const [workflows, setWorkflows] = useState<StoredWorkflow[]>([]);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
+    // Check authentication status
+    setIsLoggedIn(isAuthenticated());
+    
     // Load workflows
     setWorkflows(getWorkflows());
   }, []);
@@ -61,7 +67,16 @@ const Workflows = () => {
           </div>
         </div>
 
-        {workflows.length === 0 ? (
+        {!isLoggedIn && (
+          <Alert className="mb-6">
+            <AlertTitle>Not Signed In</AlertTitle>
+            <AlertDescription>
+              Sign in to view and manage your saved workflows.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {isLoggedIn && workflows.length === 0 ? (
           <div className="bg-white rounded-lg shadow-sm border p-8 text-center">
             <h3 className="text-lg font-medium mb-2">No workflows yet</h3>
             <p className="text-gray-600 mb-4">
@@ -76,7 +91,7 @@ const Workflows = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Workflow Name</TableHead>
+                  <TableHead>Name</TableHead>
                   <TableHead>Channel</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Last Updated</TableHead>
@@ -96,7 +111,7 @@ const Workflows = () => {
                     <TableCell>{formatDate(workflow.updatedAt)}</TableCell>
                     <TableCell className="text-right">
                       <Button variant="outline" asChild size="sm">
-                        <Link to={`/workflow/${workflow.id}`}>View</Link>
+                        <Link to={`/workflow/${workflow.id}`}>{workflow.status === 'draft' ? 'Edit' : 'View'}</Link>
                       </Button>
                     </TableCell>
                   </TableRow>

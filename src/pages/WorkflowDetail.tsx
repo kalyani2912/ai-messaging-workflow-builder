@@ -12,8 +12,7 @@ import ChatInterface from "../components/createWorkflow/ChatInterface";
 import WorkflowPreview from "../components/createWorkflow/WorkflowPreview";
 
 // Import WorkflowType from WorkflowInfo instead of defining it here
-import type { WorkflowInfoProps } from "../components/workflowDetail/WorkflowInfo";
-type WorkflowType = WorkflowInfoProps["type"];
+import type { WorkflowInfoProps, WorkflowType } from "../components/workflowDetail/WorkflowInfo";
 
 interface WorkflowStep {
   id: number;

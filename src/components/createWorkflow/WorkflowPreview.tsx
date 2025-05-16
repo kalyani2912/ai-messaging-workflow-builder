@@ -3,6 +3,7 @@ import { ArrowDown, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { WorkflowData } from "@/utils/huggingFaceApi";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface WorkflowStep {
   id: number;
@@ -79,13 +80,6 @@ const WorkflowPreview = ({ steps }: WorkflowPreviewProps) => {
     });
   };
 
-  const handleLaunchCampaign = () => {
-    toast({
-      title: "Campaign Launched",
-      description: "Your workflow has been saved and is ready to launch!",
-    });
-  };
-
   return (
     <div className="flex flex-col h-full bg-gray-50 border-l">
       <div className="p-4 border-b bg-white">
@@ -95,7 +89,7 @@ const WorkflowPreview = ({ steps }: WorkflowPreviewProps) => {
         </p>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4">
+      <ScrollArea className="flex-1 p-4">
         {steps.length === 0 ? (
           <div className="text-center py-8">
             <p className="text-gray-500 mb-2">No steps yet</p>
@@ -134,22 +128,15 @@ const WorkflowPreview = ({ steps }: WorkflowPreviewProps) => {
             ))}
           </div>
         )}
-      </div>
+      </ScrollArea>
 
-      <div className="p-4 border-t bg-white space-y-2">
+      <div className="p-4 border-t bg-white">
         <Button 
           variant="outline" 
           className="w-full flex items-center justify-center"
           onClick={handleUploadContacts}
         >
           <Upload className="h-4 w-4 mr-2" /> Upload Contacts
-        </Button>
-        <Button 
-          className="w-full"
-          disabled={steps.length === 0}
-          onClick={handleLaunchCampaign}
-        >
-          Launch Campaign
         </Button>
       </div>
     </div>

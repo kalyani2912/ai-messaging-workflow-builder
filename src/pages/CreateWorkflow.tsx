@@ -5,7 +5,6 @@ import Layout from "../components/Layout";
 import { Separator } from "@/components/ui/separator";
 import ChatInterface from "../components/createWorkflow/ChatInterface";
 import WorkflowPreview from "../components/createWorkflow/WorkflowPreview";
-import { WorkflowData } from "@/utils/huggingFaceApi";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { isAuthenticated } from "@/utils/userStore";
