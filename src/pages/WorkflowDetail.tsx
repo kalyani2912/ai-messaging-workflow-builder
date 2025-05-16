@@ -11,6 +11,9 @@ import { getWorkflowById, StoredWorkflow } from "@/utils/workflowStore";
 import ChatInterface from "../components/createWorkflow/ChatInterface";
 import WorkflowPreview from "../components/createWorkflow/WorkflowPreview";
 
+// Define WorkflowType type to match what's expected in WorkflowInfo
+type WorkflowType = "SMS" | "Email" | "WhatsApp" | "Messenger" | "Multi-channel";
+
 interface WorkflowStep {
   id: number;
   type: "trigger" | "message" | "condition";
@@ -101,6 +104,9 @@ const WorkflowDetail = () => {
     );
   }
 
+  // Convert the trigger_channel string to a WorkflowType
+  const workflowType: WorkflowType = workflow.trigger_channel as WorkflowType;
+
   return (
     <Layout>
       <div className="container mx-auto py-12">
@@ -124,7 +130,7 @@ const WorkflowDetail = () => {
             <WorkflowInfo 
               id={workflow.id}
               name={workflow.keyword}
-              type={workflow.trigger_channel}
+              type={workflowType}
               createdOn={new Date(workflow.createdAt).toLocaleDateString()}
               lastRun={new Date(workflow.updatedAt).toLocaleDateString()}
               status={workflow.status === 'launched' ? 'Active' : 'Draft'}
