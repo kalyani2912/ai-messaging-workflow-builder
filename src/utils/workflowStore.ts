@@ -6,6 +6,7 @@ import { toast } from "@/hooks/use-toast";
 export interface StoredWorkflow {
   id: string;
   userId: string;
+  workflow_type?: string;
   keyword: string;
   trigger_channel: string;
   message: {
@@ -16,7 +17,8 @@ export interface StoredWorkflow {
   conversationHistory: ConversationItem[];
   createdAt: string;
   updatedAt: string;
-  last_run_at: string | null; // New field for tracking last run date
+  last_run_at: string | null;
+  channels?: string[];
 }
 
 export interface ConversationItem {
@@ -58,7 +60,14 @@ export const saveWorkflow = (
       // Update existing workflow
       const updated = {
         ...workflows[existingIndex],
-        ...workflowData,
+        workflow_type: workflowData.workflow_type || workflows[existingIndex].workflow_type,
+        keyword: workflowData.keyword || workflows[existingIndex].keyword,
+        trigger_channel: workflowData.trigger_channel || workflows[existingIndex].trigger_channel,
+        channels: workflowData.channels || workflows[existingIndex].channels,
+        message: {
+          content: workflowData.message?.content || workflows[existingIndex].message.content,
+          delay: workflowData.message?.delay || workflows[existingIndex].message.delay,
+        },
         status,
         conversationHistory,
         updatedAt: now,
@@ -68,29 +77,36 @@ export const saveWorkflow = (
           : workflows[existingIndex].last_run_at
       };
       
-      workflows[existingIndex] = updated;
+      workflows[existingIndex] = updated as StoredWorkflow;
       
       // Update localStorage
       localStorage.setItem('workflows', JSON.stringify(workflows));
       
       toast({
         title: "Workflow updated",
-        description: `Workflow "${workflowData.keyword}" has been updated.`,
+        description: `Workflow "${workflowData.keyword || 'Workflow'}" has been updated.`,
       });
       
       // Simulate network delay
-      setTimeout(() => resolve(updated), 500);
+      setTimeout(() => resolve(updated as StoredWorkflow), 500);
     } else {
       // Create new workflow
       const newWorkflow: StoredWorkflow = {
         id: `workflow_${Date.now()}`,
         userId: currentUser.id,
-        ...workflowData,
+        workflow_type: workflowData.workflow_type,
+        keyword: workflowData.keyword || '',
+        trigger_channel: workflowData.trigger_channel || 'SMS',
+        channels: workflowData.channels,
+        message: {
+          content: workflowData.message?.content || '',
+          delay: workflowData.message?.delay || 'immediate',
+        },
         status,
         conversationHistory,
         createdAt: now,
         updatedAt: now,
-        last_run_at: status === 'launched' ? now : null // Only set last_run_at if the workflow is being launched
+        last_run_at: status === 'launched' ? now : null
       };
       
       workflows.push(newWorkflow);
@@ -100,7 +116,7 @@ export const saveWorkflow = (
       
       toast({
         title: "Workflow saved",
-        description: `Workflow "${workflowData.keyword}" has been saved as ${status}.`,
+        description: `Workflow "${workflowData.keyword || 'New workflow'}" has been saved as ${status}.`,
       });
       
       // Simulate network delay
@@ -172,6 +188,7 @@ try {
       // Ensure all workflows have the last_run_at field
       const updatedWorkflows = parsedWorkflows.map(workflow => ({
         ...workflow,
+        workflow_type: workflow.workflow_type || undefined,
         last_run_at: workflow.last_run_at || (workflow.status === 'launched' ? workflow.updatedAt : null)
       }));
       workflows.push(...updatedWorkflows);
