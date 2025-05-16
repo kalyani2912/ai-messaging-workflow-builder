@@ -2,7 +2,7 @@
 import { ArrowDown, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
-import { WorkflowData } from "@/utils/huggingFaceApi";
+import { WorkflowData } from "@/utils/openAiApi";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface WorkflowStep {

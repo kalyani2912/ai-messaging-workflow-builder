@@ -1,6 +1,6 @@
 
 import { getCurrentUser } from "./userStore";
-import { WorkflowData } from "./huggingFaceApi";
+import { WorkflowData } from "./openAiApi";
 import { toast } from "@/hooks/use-toast";
 
 export interface StoredWorkflow {
