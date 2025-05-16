@@ -81,7 +81,7 @@ const WorkflowPreview = ({ steps }: WorkflowPreviewProps) => {
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full max-h-full">
       <div className="p-4 border-b bg-white sticky top-0 z-10">
         <h3 className="text-lg font-medium">Workflow Preview</h3>
         <p className="text-sm text-gray-500">
@@ -89,7 +89,7 @@ const WorkflowPreview = ({ steps }: WorkflowPreviewProps) => {
         </p>
       </div>
 
-      <ScrollArea className="flex-1">
+      <ScrollArea className="flex-1 overflow-auto">
         <div className="p-4">
           {steps.length === 0 ? (
             <div className="text-center py-8">

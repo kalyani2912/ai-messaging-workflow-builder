@@ -117,8 +117,8 @@ const WorkflowDetail = () => {
 
   return (
     <Layout>
-      <div className="container mx-auto py-12 flex flex-col h-[calc(100vh-64px)]">
-        <div className="mb-10">
+      <div className="container mx-auto py-6 flex flex-col h-[calc(100vh-64px)]">
+        <div className="mb-6">
           <h1 className="text-3xl font-bold mb-2">Workflow: {workflow.keyword}</h1>
           <p className="text-gray-600">
             Status: <span className={workflow.status === 'launched' ? 'text-green-600 font-medium' : 'text-gray-600'}>
@@ -128,7 +128,7 @@ const WorkflowDetail = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-          <TabsList className="w-full border-b pb-px mb-8">
+          <TabsList className="w-full border-b pb-px mb-6">
             <TabsTrigger value="info" className="text-lg">Workflow Info</TabsTrigger>
             <TabsTrigger value="conversation" className="text-lg">AI Conversation History</TabsTrigger>
             <TabsTrigger value="edit" className="text-lg">Edit Workflow</TabsTrigger>
@@ -159,8 +159,8 @@ const WorkflowDetail = () => {
                 <ChatInterface onUpdateWorkflow={handleUpdateWorkflow} initialWorkflow={workflow} />
               </div>
               
-              {/* Workflow preview takes 25% */}
-              <div className="lg:col-span-1 h-full overflow-hidden">
+              {/* Workflow preview takes 25% - set position sticky */}
+              <div className="lg:col-span-1 h-full overflow-hidden sticky top-0 bg-gray-50 border-l">
                 <WorkflowPreview steps={workflowSteps} />
               </div>
             </div>

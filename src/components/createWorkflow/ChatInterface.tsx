@@ -50,6 +50,7 @@ const ChatInterface = ({ onUpdateWorkflow, initialWorkflow }: ChatInterfaceProps
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const [showAuthDialog, setShowAuthDialog] = useState(false);
   const [pendingAction, setPendingAction] = useState<'launched' | 'draft' | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
 
   // Our workflow data structure
   const [workflow, setWorkflow] = useState<WorkflowData>({
@@ -202,7 +203,7 @@ const ChatInterface = ({ onUpdateWorkflow, initialWorkflow }: ChatInterfaceProps
     setMessage("");
 
     // Process user input based on current conversation step
-    processUserInput(currentMessage);
+    await processUserInput(currentMessage);
   };
 
   const processUserInput = async (userInput: string) => {
@@ -263,7 +264,36 @@ const ChatInterface = ({ onUpdateWorkflow, initialWorkflow }: ChatInterfaceProps
           // Normal AI response - use the new system prompt
           const systemPrompt = buildSystemPrompt();
           const response = await getAIResponse(systemPrompt, userInput);
-          addAIMessage(response);
+          
+          // Check if the response is the fallback message from sanitizer
+          if (response === "Please reply to proceed with your workflow setup.") {
+            // If we've hit the retry limit, show the error message
+            if (retryCount >= 2) {
+              addAIMessage("Sorry, I'm having trouble understanding. Let's continue with the next step.");
+              setRetryCount(0);
+            } else {
+              // Retry getting a response
+              setRetryCount(prev => prev + 1);
+              
+              // Generate a more specific prompt based on the conversation step
+              let contextPrompt = userInput;
+              
+              if (nextStep === 1) {
+                contextPrompt = `The keyword is "${userInput}". What channel should we use?`;
+              } else if (nextStep === 2) {
+                contextPrompt = `The trigger channel is ${updatedWorkflow.trigger_channel}. What message should we send when we receive "${updatedWorkflow.keyword}"?`;
+              } else if (nextStep === 3) {
+                contextPrompt = `The message content is "${userInput}". Should we delay sending this message or send it immediately?`;
+              }
+              
+              const retryResponse = await getAIResponse(systemPrompt, contextPrompt);
+              addAIMessage(retryResponse);
+            }
+          } else {
+            // Valid response, reset retry counter
+            setRetryCount(0);
+            addAIMessage(response);
+          }
         }
       } catch (error) {
         console.error("Error getting AI response:", error);
@@ -377,7 +407,7 @@ const ChatInterface = ({ onUpdateWorkflow, initialWorkflow }: ChatInterfaceProps
         </p>
       </div>
       
-      {/* Use position-relative for the scroll area container to ensure scrollbar appears within it */}
+      {/* Position-relative for the scroll area container */}
       <div className="relative flex-1 overflow-hidden">
         <ScrollArea className="h-full p-4" ref={scrollAreaRef}>
           <div className="space-y-4">

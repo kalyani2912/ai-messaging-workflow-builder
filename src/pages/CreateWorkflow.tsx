@@ -39,8 +39,8 @@ const CreateWorkflow = () => {
 
   return (
     <Layout>
-      <div className="container mx-auto py-6 flex flex-col h-[calc(100vh-64px)]"> {/* Adjust height to account for navbar */}
-        <div className="mb-6">
+      <div className="container mx-auto py-6 flex flex-col h-[calc(100vh-64px)]">
+        <div className="mb-4">
           <h1 className="text-3xl font-bold mb-2">Create New Workflow</h1>
           <p className="text-gray-600">
             Describe what you want to automate, and our AI will build your workflow in real-time.
@@ -48,7 +48,7 @@ const CreateWorkflow = () => {
         </div>
         
         {showAuthAlert && (
-          <Alert className="mb-6">
+          <Alert className="mb-4">
             <AlertTitle>You're not signed in</AlertTitle>
             <AlertDescription className="flex flex-col sm:flex-row sm:items-center gap-4">
               <span>Sign in or create an account to save your workflows.</span>
@@ -64,9 +64,9 @@ const CreateWorkflow = () => {
           </Alert>
         )}
         
-        <Separator className="mb-6" />
+        <Separator className="mb-4" />
         
-        {/* Fixed height container for the chat and preview with overflow hidden to prevent page scrolling */}
+        {/* Fixed height container for the chat and preview with overflow hidden */}
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-4 gap-0 border rounded-lg shadow-sm overflow-hidden">
           {/* Chat interface takes 75% */}
           <div className="lg:col-span-3 h-full overflow-hidden">
@@ -74,7 +74,7 @@ const CreateWorkflow = () => {
           </div>
           
           {/* Workflow preview takes 25% - fixed position on larger screens */}
-          <div className="lg:col-span-1 h-full overflow-hidden bg-gray-50 border-l">
+          <div className="lg:col-span-1 h-full overflow-hidden bg-gray-50 border-l sticky top-0">
             <WorkflowPreview steps={workflowSteps} />
           </div>
         </div>

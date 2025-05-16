@@ -1,4 +1,3 @@
-
 // This is a placeholder for your API key - to be replaced by the user
 const HUGGINGFACE_API_KEY = "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";
 
@@ -6,18 +5,24 @@ interface HuggingFaceResponse {
   generated_text: string;
 }
 
-// Middleware to sanitize AI responses
+// Middleware to sanitize AI responses - improved detection logic
 export const sanitizeResponse = (response: string): string => {
-  // Check for hallucinated content
+  // Improved hallucination detection - only block simulated conversations and outcomes
   if (
     response.includes("User:") ||
     response.includes("Assistant:") ||
-    response.match(/Message (sent|scheduled|delivered)/i) ||
+    /Message (sent|scheduled|delivered)/i.test(response) ||
     response.includes("workflow saved") ||
     response.includes("workflow launched")
   ) {
     return "Please reply to proceed with your workflow setup.";
   }
+
+  // Handle blank or malformed responses
+  if (!response || response.trim().length === 0) {
+    return "Sorry, something went wrong. Please try again.";
+  }
+
   return response;
 };
 
@@ -146,18 +151,21 @@ export interface WorkflowData {
   launch_decision: string;
 }
 
+// Improved channel input validation with normalization
 export const validateChannelInput = (input: string): boolean => {
-  const allowedChannels = ["SMS", "WHATSAPP", "EMAIL", "MESSENGER"];
-  return allowedChannels.includes(input.toUpperCase());
+  const normalizedInput = input.trim().toLowerCase();
+  const allowedChannels = ["sms", "whatsapp", "email", "messenger"];
+  return allowedChannels.includes(normalizedInput);
 };
 
 export const normalizeChannelInput = (input: string): string => {
+  const normalizedInput = input.trim().toLowerCase();
   const map: Record<string, string> = {
-    "SMS": "SMS",
-    "WHATSAPP": "WhatsApp",
-    "EMAIL": "Email",
-    "MESSENGER": "Messenger"
+    "sms": "SMS",
+    "whatsapp": "WhatsApp",
+    "email": "Email",
+    "messenger": "Messenger"
   };
   
-  return map[input.toUpperCase()] || input.toUpperCase();
+  return map[normalizedInput] || input;
 };
