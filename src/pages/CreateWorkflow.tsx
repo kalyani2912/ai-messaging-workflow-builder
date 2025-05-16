@@ -1,10 +1,14 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import Layout from "../components/Layout";
 import { Separator } from "@/components/ui/separator";
 import ChatInterface from "../components/createWorkflow/ChatInterface";
 import WorkflowPreview from "../components/createWorkflow/WorkflowPreview";
 import { WorkflowData } from "@/utils/huggingFaceApi";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { isAuthenticated } from "@/utils/userStore";
 
 interface WorkflowStep {
   id: number;
@@ -16,6 +20,19 @@ interface WorkflowStep {
 
 const CreateWorkflow = () => {
   const [workflowSteps, setWorkflowSteps] = useState<WorkflowStep[]>([]);
+  const [showAuthAlert, setShowAuthAlert] = useState(false);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Check authentication status after a short delay to ensure UI renders first
+    const timer = setTimeout(() => {
+      if (!isAuthenticated()) {
+        setShowAuthAlert(true);
+      }
+    }, 500);
+    
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleUpdateWorkflow = (steps: WorkflowStep[]) => {
     setWorkflowSteps(steps);
@@ -30,6 +47,23 @@ const CreateWorkflow = () => {
             Describe what you want to automate, and our AI will build your workflow in real-time.
           </p>
         </div>
+        
+        {showAuthAlert && (
+          <Alert className="mb-6">
+            <AlertTitle>You're not signed in</AlertTitle>
+            <AlertDescription className="flex flex-col sm:flex-row sm:items-center gap-4">
+              <span>Sign in or create an account to save your workflows.</span>
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" onClick={() => navigate("/signin")}>
+                  Sign In
+                </Button>
+                <Button size="sm" onClick={() => navigate("/signup")}>
+                  Sign Up
+                </Button>
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
         
         <Separator className="mb-6" />
         

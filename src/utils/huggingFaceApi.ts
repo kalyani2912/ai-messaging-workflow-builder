@@ -6,6 +6,7 @@ interface HuggingFaceResponse {
   generated_text: string;
 }
 
+// Get response from Agent 1 (Zephyr model)
 export const getAIResponse = async (systemPrompt: string, userMessage: string): Promise<string> => {
   try {
     const headers = {
@@ -42,6 +43,50 @@ export const getAIResponse = async (systemPrompt: string, userMessage: string): 
   } catch (error) {
     console.error("Error calling Hugging Face API:", error);
     return "Sorry, I encountered an error. Please try again in a moment.";
+  }
+};
+
+// Get response from Agent 2 (OpenChat model) for workflow visualization
+export const getWorkflowVisualization = async (workflowData: WorkflowData): Promise<string> => {
+  try {
+    const headers = {
+      "Authorization": `Bearer ${HUGGINGFACE_API_KEY}`,
+      "Content-Type": "application/json"
+    };
+
+    const systemPrompt = "You are a workflow visualizer. Based on this partial workflow JSON, return a summary of all confirmed steps so far in the format of readable nodes that can be shown in a flow preview.";
+    const userMessage = JSON.stringify(workflowData, null, 2);
+    
+    const body = {
+      inputs: `${systemPrompt}\nUser: ${userMessage}`,
+      parameters: {
+        max_new_tokens: 200,
+        temperature: 0.3,
+        return_full_text: false
+      }
+    };
+
+    const response = await fetch("https://api-inference.huggingface.co/models/OpenChat/openchat-3.5-0106", {
+      method: "POST",
+      headers,
+      body: JSON.stringify(body)
+    });
+
+    if (!response.ok) {
+      throw new Error(`API request failed with status: ${response.status}`);
+    }
+
+    const data: HuggingFaceResponse[] = await response.json();
+    
+    if (!data || !data[0]?.generated_text) {
+      return "Unable to generate workflow visualization.";
+    }
+    
+    return data[0].generated_text.trim();
+  } catch (error) {
+    console.error("Error calling OpenChat API:", error);
+    return `🟢 Trigger: Keyword '${workflowData.keyword || "[Pending]"}' on ${workflowData.trigger_channel || "[Pending]"}
+${workflowData.message?.content ? `→ 🟡 Action: Send message ${workflowData.message.delay || "immediately"}: '${workflowData.message.content}'` : ""}`;
   }
 };
 
