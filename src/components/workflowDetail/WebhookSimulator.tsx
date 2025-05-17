@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { simulateInboundMessage } from "@/utils/webhookApi";
 import { Textarea } from "@/components/ui/textarea";
 import { MessageSquare, Mail, AlertCircle, PhoneCall } from "lucide-react";
-import { StoredWorkflow } from "@/utils/workflowStore";
+import { StoredWorkflow } from "@/utils/types/workflow";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface WebhookSimulatorProps {
@@ -16,12 +16,21 @@ interface WebhookSimulatorProps {
 }
 
 const WebhookSimulator = ({ workflow }: WebhookSimulatorProps) => {
+  // For backward compatibility, determine if we should use workflow.trigger or direct properties
+  const keyword = workflow.trigger?.keyword || workflow.keyword || "";
+  
+  // For channels, we'll need to convert from the old format if trigger is not present
+  // Converting from a single trigger_channel to an array if needed
+  const channels = workflow.trigger?.channels || 
+                 (workflow.channels || 
+                  (workflow.trigger_channel ? [workflow.trigger_channel] : []));
+
   const [activeTab, setActiveTab] = useState<string>("sms");
   const [senderSMS, setSenderSMS] = useState<string>("+15551234567");
   const [senderWhatsApp, setSenderWhatsApp] = useState<string>("+15551234567");
   const [senderEmail, setSenderEmail] = useState<string>("user@example.com");
-  const [message, setMessage] = useState<string>(workflow.keyword || "");
-  const [emailSubject, setEmailSubject] = useState<string>(workflow.keyword || "");
+  const [message, setMessage] = useState<string>(keyword);
+  const [emailSubject, setEmailSubject] = useState<string>(keyword);
   const [emailBody, setEmailBody] = useState<string>("Hello, I'm interested in your service.");
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [testResult, setTestResult] = useState<{success: boolean, message: string} | null>(null);
@@ -52,7 +61,7 @@ const WebhookSimulator = ({ workflow }: WebhookSimulatorProps) => {
         success,
         message: success 
           ? `Test successful. Check execution logs below.` 
-          : `No workflow matched. Make sure your test message includes the keyword "${workflow.keyword}".`
+          : `No workflow matched. Make sure your test message includes the keyword "${keyword}".`
       });
     } catch (error) {
       console.error('Simulation error:', error);
@@ -77,15 +86,15 @@ const WebhookSimulator = ({ workflow }: WebhookSimulatorProps) => {
       <CardContent>
         <Tabs defaultValue="sms" value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid grid-cols-3 mb-4">
-            <TabsTrigger value="sms" disabled={!workflow.trigger.channels.includes('SMS')}>
+            <TabsTrigger value="sms" disabled={!channels.includes('SMS')}>
               <PhoneCall className="h-4 w-4 mr-2" />
               SMS
             </TabsTrigger>
-            <TabsTrigger value="whatsapp" disabled={!workflow.trigger.channels.includes('WhatsApp')}>
+            <TabsTrigger value="whatsapp" disabled={!channels.includes('WhatsApp')}>
               <MessageSquare className="h-4 w-4 mr-2" />
               WhatsApp
             </TabsTrigger>
-            <TabsTrigger value="email" disabled={!workflow.trigger.channels.includes('Email')}>
+            <TabsTrigger value="email" disabled={!channels.includes('Email')}>
               <Mail className="h-4 w-4 mr-2" />
               Email
             </TabsTrigger>
@@ -117,7 +126,7 @@ const WebhookSimulator = ({ workflow }: WebhookSimulatorProps) => {
                 <MessageSquare className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               </div>
               <p className="text-xs text-gray-500">
-                Include the trigger keyword "{workflow.trigger.keyword}" to activate the workflow
+                Include the trigger keyword "{keyword}" to activate the workflow
               </p>
             </div>
           </TabsContent>
@@ -148,7 +157,7 @@ const WebhookSimulator = ({ workflow }: WebhookSimulatorProps) => {
                 <MessageSquare className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               </div>
               <p className="text-xs text-gray-500">
-                Include the trigger keyword "{workflow.trigger.keyword}" to activate the workflow
+                Include the trigger keyword "{keyword}" to activate the workflow
               </p>
             </div>
           </TabsContent>
@@ -176,7 +185,7 @@ const WebhookSimulator = ({ workflow }: WebhookSimulatorProps) => {
                 <Mail className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               </div>
               <p className="text-xs text-gray-500">
-                Include the trigger keyword "{workflow.trigger.keyword}" in the subject to activate the workflow
+                Include the trigger keyword "{keyword}" in the subject to activate the workflow
               </p>
             </div>
             

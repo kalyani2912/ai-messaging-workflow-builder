@@ -1,7 +1,29 @@
-
 import { getCurrentUser } from "./userStore";
-import { WorkflowData, ExecutableWorkflow, ExecutionLogEntry, generateWorkflowJSON } from "./openAiApi";
+import { ExecutableWorkflow, ExecutionLogEntry } from "./types/workflow"; 
 import { toast } from "@/hooks/use-toast";
+
+export interface ConversationItem {
+  id: number;
+  sender: 'user' | 'ai';
+  content: string;
+  timestamp: string;
+}
+
+export interface WorkflowData {
+  workflow_type?: string;
+  keyword?: string;
+  trigger_channel?: string;
+  channels?: string[];
+  message?: {
+    content: string;
+    delay: string;
+  };
+  reminder_timing?: string;
+  reminder_message?: string;
+  csv_uploaded?: boolean;
+  add_opt_out?: boolean;
+  launch_decision?: string;
+}
 
 export interface StoredWorkflow {
   id: string;
@@ -21,13 +43,11 @@ export interface StoredWorkflow {
   channels?: string[];
   executable_workflow?: ExecutableWorkflow;
   execution_log?: ExecutionLogEntry[];
-}
-
-export interface ConversationItem {
-  id: number;
-  sender: 'user' | 'ai';
-  content: string;
-  timestamp: string;
+  // Adding the trigger property to match what WebhookSimulator expects
+  trigger: {
+    keyword: string;
+    channels: string[];
+  };
 }
 
 // In-memory workflow store (in a real app, this would be a database)
@@ -101,7 +121,15 @@ export const saveWorkflow = (
           (workflows[existingIndex].status === 'draft' || !workflows[existingIndex].last_run_at ? now : workflows[existingIndex].last_run_at) 
           : workflows[existingIndex].last_run_at,
         executable_workflow: status === 'launched' ? executableWorkflow : undefined,
-        execution_log: status === 'launched' ? [] : undefined
+        execution_log: status === 'launched' ? [] : undefined,
+        // Update the trigger property to match the expected format
+        trigger: {
+          keyword: workflowData.keyword || workflows[existingIndex].keyword,
+          channels: workflowData.channels || 
+                   (workflowData.trigger_channel ? [workflowData.trigger_channel] : 
+                    workflows[existingIndex].channels || 
+                    [workflows[existingIndex].trigger_channel])
+        }
       };
       
       workflows[existingIndex] = updated as StoredWorkflow;
@@ -135,7 +163,13 @@ export const saveWorkflow = (
         updatedAt: now,
         last_run_at: status === 'launched' ? now : null,
         executable_workflow: status === 'launched' ? executableWorkflow : undefined,
-        execution_log: status === 'launched' ? [] : undefined
+        execution_log: status === 'launched' ? [] : undefined,
+        // Add the trigger property with the expected format
+        trigger: {
+          keyword: workflowData.keyword || '',
+          channels: workflowData.channels || 
+                   (workflowData.trigger_channel ? [workflowData.trigger_channel] : ['SMS'])
+        }
       };
       
       workflows.push(newWorkflow);
@@ -261,18 +295,60 @@ export const getWorkflowExecutionLogs = (workflowId: string): ExecutionLogEntry[
   return [];
 };
 
+// Add generateWorkflowJSON function if it's not defined elsewhere
+function generateWorkflowJSON(
+  workflowData: WorkflowData,
+  userId: string,
+  email: string,
+  phone: string
+): ExecutableWorkflow {
+  return {
+    id: `exec_workflow_${Date.now()}`,
+    status: 'active',
+    type: workflowData.workflow_type || 'keyword_trigger',
+    trigger: {
+      keyword: workflowData.keyword || '',
+      channels: workflowData.channels || (workflowData.trigger_channel ? [workflowData.trigger_channel] : ['SMS'])
+    },
+    action: {
+      type: 'send_message',
+      delay: workflowData.message?.delay || 'immediate',
+      messages: {
+        sms: workflowData.message?.content,
+        whatsapp: workflowData.message?.content,
+        messenger: workflowData.message?.content,
+        email: {
+          subject: workflowData.keyword || 'No Subject',
+          body: workflowData.message?.content || ''
+        }
+      }
+    },
+    owner: {
+      user_id: userId,
+      email,
+      phone
+    },
+    execution_log: []
+  };
+}
+
 // Load workflows from localStorage on module initialization
 try {
   const storedWorkflows = localStorage.getItem('workflows');
   if (storedWorkflows) {
     const parsedWorkflows = JSON.parse(storedWorkflows);
     if (Array.isArray(parsedWorkflows)) {
-      // Ensure all workflows have the last_run_at field
+      // Ensure all workflows have the last_run_at and trigger fields
       const updatedWorkflows = parsedWorkflows.map(workflow => ({
         ...workflow,
         workflow_type: workflow.workflow_type || undefined,
         last_run_at: workflow.last_run_at || (workflow.status === 'launched' ? workflow.updatedAt : null),
-        execution_log: workflow.execution_log || []
+        execution_log: workflow.execution_log || [],
+        // Ensure the trigger property exists
+        trigger: workflow.trigger || {
+          keyword: workflow.keyword || '',
+          channels: workflow.channels || [workflow.trigger_channel]
+        }
       }));
       workflows.push(...updatedWorkflows);
       
