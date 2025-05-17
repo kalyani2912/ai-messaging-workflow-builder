@@ -49,7 +49,7 @@ const Index = () => {
   }; */
 
   const handleConnectHubspot = () => {
-    const clientId = "YOUR_HUBSPOT_CLIENT_ID";
+   /* const clientId = "YOUR_HUBSPOT_CLIENT_ID";
     const redirectUri = "http://localhost:3000/hubspot-callback"; // or your deployed URL
     const scopes = [
      "crm.objects.contacts.read",
@@ -57,7 +57,8 @@ const Index = () => {
      "crm.objects.engagements.read"
     ].join("%20");
 
-    window.location.href = `https://app.hubspot.com/oauth/authorize?client_id=${clientId}&scope=${scopes}&redirect_uri=${redirectUri}`;
+    window.location.href = `https://app.hubspot.com/oauth/authorize?client_id=${clientId}&scope=${scopes}&redirect_uri=${redirectUri}`; */
+    alert("HubSpot CRM is already connected using a fixed token.");
   };
 
   const handleTestCRMConnection = async () => {
