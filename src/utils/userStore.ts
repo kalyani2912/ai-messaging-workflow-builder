@@ -7,6 +7,7 @@ export interface User {
   email: string;
   password: string; // In a real app, this would be hashed on the server
   name?: string;
+  phone?: string; // Added phone property
   createdAt: string;
 }
 

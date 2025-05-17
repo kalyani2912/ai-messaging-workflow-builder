@@ -2,34 +2,62 @@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import { Button } from "@/components/ui/button";
 import { Download, FileText } from "lucide-react";
+import { StoredWorkflow } from '@/utils/workflowStore';
 
 interface WorkflowDashboardProps {
-  messagesSent: number;
-  deliveryRate: number;
-  openRate: number;
-  replyRate: number;
-  messagesOverTime: {
-    date: string;
-    sent: number;
-    delivered: number;
-    opened: number;
-  }[];
-  channelBreakdown: {
-    name: string;
-    value: number;
-  }[];
+  workflow: StoredWorkflow;
 }
 
 const COLORS = ['#3B82F6', '#0EA5E9', '#6366F1', '#8B5CF6'];
 
-const WorkflowDashboard = ({
-  messagesSent,
-  deliveryRate,
-  openRate,
-  replyRate,
-  messagesOverTime,
-  channelBreakdown,
-}: WorkflowDashboardProps) => {
+const WorkflowDashboard = ({ workflow }: WorkflowDashboardProps) => {
+  // Mock data based on the real workflow
+  const messagesSent = workflow.execution_log?.length || 0;
+  const deliveryRate = messagesSent > 0 ? 95 : 0; // Mock delivery rate
+  const openRate = messagesSent > 0 ? 60 : 0;     // Mock open rate
+  const replyRate = messagesSent > 0 ? 12 : 0;    // Mock reply rate
+  
+  // Generate mock data for messages over time
+  const messagesOverTime = [
+    {
+      date: "Mon",
+      sent: messagesSent > 0 ? Math.floor(Math.random() * 10) + 1 : 0,
+      delivered: messagesSent > 0 ? Math.floor(Math.random() * 8) + 1 : 0,
+      opened: messagesSent > 0 ? Math.floor(Math.random() * 5) + 1 : 0,
+    },
+    {
+      date: "Tue",
+      sent: messagesSent > 0 ? Math.floor(Math.random() * 10) + 1 : 0,
+      delivered: messagesSent > 0 ? Math.floor(Math.random() * 8) + 1 : 0,
+      opened: messagesSent > 0 ? Math.floor(Math.random() * 5) + 1 : 0,
+    },
+    {
+      date: "Wed",
+      sent: messagesSent > 0 ? Math.floor(Math.random() * 10) + 1 : 0,
+      delivered: messagesSent > 0 ? Math.floor(Math.random() * 8) + 1 : 0,
+      opened: messagesSent > 0 ? Math.floor(Math.random() * 5) + 1 : 0,
+    },
+    {
+      date: "Thu",
+      sent: messagesSent > 0 ? Math.floor(Math.random() * 10) + 1 : 0,
+      delivered: messagesSent > 0 ? Math.floor(Math.random() * 8) + 1 : 0,
+      opened: messagesSent > 0 ? Math.floor(Math.random() * 5) + 1 : 0,
+    },
+    {
+      date: "Fri",
+      sent: messagesSent > 0 ? Math.floor(Math.random() * 10) + 1 : 0,
+      delivered: messagesSent > 0 ? Math.floor(Math.random() * 8) + 1 : 0,
+      opened: messagesSent > 0 ? Math.floor(Math.random() * 5) + 1 : 0,
+    },
+  ];
+  
+  // Generate mock channel breakdown
+  const channels = workflow.channels || [workflow.trigger_channel];
+  const channelBreakdown = channels.map(channel => ({
+    name: channel,
+    value: messagesSent > 0 ? Math.floor((Math.random() * messagesSent) + 1) : 0,
+  }));
+
   return (
     <div className="bg-white p-6 md:p-8 rounded-lg shadow-sm border border-gray-100">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">

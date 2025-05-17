@@ -217,25 +217,28 @@ export const generateWorkflowJSON = (workflowData: WorkflowData, userId: string,
     const messageContent = workflowData.message.content;
     
     workflowData.channels.forEach(channel => {
-      const channelKey = channel.toLowerCase() as keyof ActionMessages;
       if (channel.toLowerCase() === 'email') {
         workflow.action.messages.email = {
           subject: `${workflowData.keyword} Notification`,
           body: messageContent
         };
       } else {
-        workflow.action.messages[channelKey] = messageContent;
+        const channelKey = channel.toLowerCase() as keyof ActionMessages;
+        if (channelKey === 'sms' || channelKey === 'whatsapp' || channelKey === 'messenger') {
+          workflow.action.messages[channelKey] = messageContent;
+        }
       }
     });
   } else if (workflowData.trigger_channel && workflowData.message?.content) {
-    const channel = workflowData.trigger_channel.toLowerCase() as keyof ActionMessages;
+    const channel = workflowData.trigger_channel.toLowerCase();
     if (channel === 'email') {
       workflow.action.messages.email = {
         subject: `${workflowData.keyword} Notification`,
         body: workflowData.message.content
       };
-    } else {
-      workflow.action.messages[channel] = workflowData.message.content;
+    } else if (channel === 'sms' || channel === 'whatsapp' || channel === 'messenger') {
+      const channelKey = channel as keyof ActionMessages;
+      workflow.action.messages[channelKey] = workflowData.message.content;
     }
   }
   

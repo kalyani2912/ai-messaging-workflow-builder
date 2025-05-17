@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Calendar, MessageSquare, Send } from "lucide-react";
@@ -18,66 +19,60 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select";
+import { StoredWorkflow } from "@/utils/workflowStore";
+import { format } from "date-fns";
 
 // Export the type so it can be used in other files
 export type WorkflowType = "SMS" | "Email" | "WhatsApp" | "Messenger" | "Multi-channel";
 export type WorkflowStatus = "Active" | "Paused" | "Draft" | "Completed";
 
 export interface WorkflowInfoProps {
-  id: string;
-  name: string;
-  type: WorkflowType;
-  createdOn: string;
-  lastRun: string;
-  status: WorkflowStatus;
-  created_by: string;
-  message_count: number;
-  audience_size: number;
+  workflow: StoredWorkflow;
 }
 
-const getStatusColor = (status: WorkflowStatus) => {
-  switch (status) {
-    case "Active":
+const getStatusColor = (status: string) => {
+  switch (status.toLowerCase()) {
+    case "active":
       return "bg-green-100 text-green-800";
-    case "Paused":
+    case "paused":
       return "bg-amber-100 text-amber-800";
-    case "Draft":
+    case "draft":
       return "bg-gray-100 text-gray-800";
-    case "Completed":
+    case "completed":
       return "bg-blue-100 text-blue-800";
     default:
       return "bg-gray-100 text-gray-800";
   }
 };
 
-const getStatusIcon = (status: WorkflowStatus) => {
-  switch (status) {
-    case "Active":
+const getStatusIcon = (status: string) => {
+  switch (status.toLowerCase()) {
+    case "active":
       return <Send className="h-4 w-4 mr-1" />;
-    case "Paused":
+    case "paused":
       return <Calendar className="h-4 w-4 mr-1" />;
-    case "Draft":
+    case "draft":
       return <MessageSquare className="h-4 w-4 mr-1" />;
-    case "Completed":
+    case "completed":
       return <Calendar className="h-4 w-4 mr-1" />;
     default:
       return <MessageSquare className="h-4 w-4 mr-1" />;
   }
 };
 
-const WorkflowInfo = ({
-  id,
-  name,
-  type,
-  createdOn,
-  lastRun,
-  status,
-  created_by,
-  message_count,
-  audience_size,
-}: WorkflowInfoProps) => {
-  const [workflowName, setWorkflowName] = useState(name);
-  const [workflowStatus, setWorkflowStatus] = useState(status);
+const WorkflowInfo = ({ workflow }: WorkflowInfoProps) => {
+  const [workflowName, setWorkflowName] = useState(workflow.keyword);
+  const [workflowStatus, setWorkflowStatus] = useState(workflow.status);
+  
+  // Format workflow status for display
+  const formattedStatus = workflow.status.charAt(0).toUpperCase() + workflow.status.slice(1);
+  
+  // Calculate workflow type based on channels
+  const getWorkflowType = () => {
+    const channels = workflow.channels || [workflow.trigger_channel];
+    if (channels.length > 1) return "Multi-channel";
+    return channels[0] || "SMS";
+  };
 
   return (
     <div>
@@ -109,16 +104,14 @@ const WorkflowInfo = ({
                   </label>
                   <Select 
                     value={workflowStatus} 
-                    onValueChange={(value) => setWorkflowStatus(value as WorkflowStatus)}
+                    onValueChange={(value) => setWorkflowStatus(value)}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select status" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Active">Active</SelectItem>
-                      <SelectItem value="Paused">Paused</SelectItem>
-                      <SelectItem value="Draft">Draft</SelectItem>
-                      <SelectItem value="Completed">Completed</SelectItem>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="draft">Draft</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -138,43 +131,45 @@ const WorkflowInfo = ({
         <div className="grid grid-cols-1 md:grid-cols-3 gap-y-6 md:gap-x-6 mb-8">
           <div>
             <p className="text-sm font-medium text-gray-500 mb-1">Workflow ID</p>
-            <p>{id}</p>
+            <p>{workflow.id}</p>
           </div>
           <div>
             <p className="text-sm font-medium text-gray-500 mb-1">Type</p>
-            <p>{type}</p>
+            <p>{getWorkflowType()}</p>
           </div>
           <div>
             <p className="text-sm font-medium text-gray-500 mb-1">Status</p>
             <div className="flex items-center">
-              <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-sm font-medium ${getStatusColor(status)}`}>
-                {getStatusIcon(status)}
-                {status}
+              <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-sm font-medium ${getStatusColor(workflow.status)}`}>
+                {getStatusIcon(workflow.status)}
+                {formattedStatus}
               </span>
             </div>
           </div>
           <div>
             <p className="text-sm font-medium text-gray-500 mb-1">Created On</p>
-            <p>{createdOn}</p>
+            <p>{format(new Date(workflow.createdAt), "MMM d, yyyy")}</p>
           </div>
           <div>
             <p className="text-sm font-medium text-gray-500 mb-1">Last Run</p>
-            <p>{lastRun}</p>
+            <p>{workflow.last_run_at ? format(new Date(workflow.last_run_at), "MMM d, yyyy") : 'Never'}</p>
           </div>
           <div>
             <p className="text-sm font-medium text-gray-500 mb-1">Created By</p>
-            <p>{created_by}</p>
+            <p>{workflow.userId}</p>
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 md:gap-x-6">
           <div className="bg-gray-50 p-4 rounded-lg">
             <p className="text-sm font-medium text-gray-500 mb-1">Total Messages Sent</p>
-            <p className="text-2xl font-semibold">{message_count.toLocaleString()}</p>
+            <p className="text-2xl font-semibold">
+              {(workflow.execution_log?.length || 0).toLocaleString()}
+            </p>
           </div>
           <div className="bg-gray-50 p-4 rounded-lg">
             <p className="text-sm font-medium text-gray-500 mb-1">Audience Size</p>
-            <p className="text-2xl font-semibold">{audience_size.toLocaleString()}</p>
+            <p className="text-2xl font-semibold">-</p>
           </div>
         </div>
       </div>

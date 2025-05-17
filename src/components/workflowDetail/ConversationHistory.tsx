@@ -1,18 +1,14 @@
 
 import { ScrollArea } from "@/components/ui/scroll-area";
-
-interface ConversationMessage {
-  id: number;
-  sender: "user" | "ai";
-  content: string;
-  timestamp: string;
-}
+import { StoredWorkflow, ConversationItem } from "@/utils/workflowStore";
 
 interface ConversationHistoryProps {
-  messages: ConversationMessage[];
+  workflow: StoredWorkflow;
 }
 
-const ConversationHistory = ({ messages }: ConversationHistoryProps) => {
+const ConversationHistory = ({ workflow }: ConversationHistoryProps) => {
+  const messages = workflow.conversationHistory || [];
+
   return (
     <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
       <h2 className="text-xl font-semibold mb-6">Conversation History</h2>
