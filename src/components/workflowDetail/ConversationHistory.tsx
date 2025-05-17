@@ -2,7 +2,7 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { StoredWorkflow, ConversationItem } from "@/utils/workflowStore";
 
-interface ConversationHistoryProps {
+export interface ConversationHistoryProps {
   workflow: StoredWorkflow;
 }
 

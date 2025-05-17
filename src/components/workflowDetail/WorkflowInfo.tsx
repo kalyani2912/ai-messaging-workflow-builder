@@ -24,7 +24,7 @@ import { format } from "date-fns";
 
 // Export the type so it can be used in other files
 export type WorkflowType = "SMS" | "Email" | "WhatsApp" | "Messenger" | "Multi-channel";
-export type WorkflowStatus = "Active" | "Paused" | "Draft" | "Completed";
+export type WorkflowStatus = "active" | "draft" | "completed" | "paused";
 
 export interface WorkflowInfoProps {
   workflow: StoredWorkflow;
@@ -62,7 +62,7 @@ const getStatusIcon = (status: string) => {
 
 const WorkflowInfo = ({ workflow }: WorkflowInfoProps) => {
   const [workflowName, setWorkflowName] = useState(workflow.keyword);
-  const [workflowStatus, setWorkflowStatus] = useState(workflow.status);
+  const [workflowStatus, setWorkflowStatus] = useState<WorkflowStatus>(workflow.status as WorkflowStatus);
   
   // Format workflow status for display
   const formattedStatus = workflow.status.charAt(0).toUpperCase() + workflow.status.slice(1);
@@ -104,7 +104,7 @@ const WorkflowInfo = ({ workflow }: WorkflowInfoProps) => {
                   </label>
                   <Select 
                     value={workflowStatus} 
-                    onValueChange={(value) => setWorkflowStatus(value)}
+                    onValueChange={(value: WorkflowStatus) => setWorkflowStatus(value)}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select status" />
