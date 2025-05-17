@@ -8,6 +8,23 @@ import { toast } from "@/hooks/use-toast";
 // Process inbound SMS webhook
 export async function handleInboundSmsWebhook(payload: { from: string; text: string }): Promise<Response> {
   try {
+    // Validate phone number
+    if (!payload.from.match(/^\+\d{10,15}$/)) {
+      toast({
+        title: "Invalid Phone Number",
+        description: "Phone number must be in format +15551234567",
+        variant: "destructive"
+      });
+      
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: "Invalid phone number format" 
+      }), { 
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+    
     const result = await simulateInboundSMS(payload.from, payload.text);
     
     if (result) {
@@ -54,6 +71,23 @@ export async function handleInboundSmsWebhook(payload: { from: string; text: str
 // Process inbound WhatsApp webhook
 export async function handleInboundWhatsAppWebhook(payload: { from: string; text: string }): Promise<Response> {
   try {
+    // Validate phone number
+    if (!payload.from.match(/^\+\d{10,15}$/)) {
+      toast({
+        title: "Invalid Phone Number",
+        description: "Phone number must be in format +15551234567",
+        variant: "destructive"
+      });
+      
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: "Invalid phone number format" 
+      }), { 
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+    
     const result = await simulateInboundWhatsApp(payload.from, payload.text);
     
     if (result) {
@@ -100,6 +134,24 @@ export async function handleInboundWhatsAppWebhook(payload: { from: string; text
 // Process inbound Email webhook
 export async function handleInboundEmailWebhook(payload: { from: string; subject: string; body?: string }): Promise<Response> {
   try {
+    // Validate email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(payload.from)) {
+      toast({
+        title: "Invalid Email Address",
+        description: "Please provide a valid email address",
+        variant: "destructive"
+      });
+      
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: "Invalid email address" 
+      }), { 
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+    
     const result = await simulateInboundEmail(payload.from, payload.subject, payload.body);
     
     if (result) {
@@ -151,6 +203,28 @@ export async function simulateInboundMessage(
   subject?: string
 ): Promise<boolean> {
   try {
+    // Validate inputs
+    if (channel === 'sms' || channel === 'whatsapp') {
+      if (!from.match(/^\+\d{10,15}$/)) {
+        toast({
+          title: "Invalid Phone Number",
+          description: "Phone number must be in format +15551234567",
+          variant: "destructive"
+        });
+        throw new Error("Invalid phone number format");
+      }
+    } else if (channel === 'email') {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(from)) {
+        toast({
+          title: "Invalid Email Address",
+          description: "Please provide a valid email address",
+          variant: "destructive"
+        });
+        throw new Error("Invalid email address");
+      }
+    }
+    
     let result: boolean;
     
     switch (channel) {
@@ -170,7 +244,7 @@ export async function simulateInboundMessage(
     if (result) {
       toast({
         title: `${channel.toUpperCase()} Processed`,
-        description: `Message processed successfully`
+        description: `Message processed successfully. Check execution logs below.`
       });
     } else {
       toast({
@@ -190,6 +264,6 @@ export async function simulateInboundMessage(
       variant: "destructive"
     });
     
-    return false;
+    throw error;
   }
 }

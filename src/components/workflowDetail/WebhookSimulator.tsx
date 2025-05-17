@@ -7,8 +7,9 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { simulateInboundMessage } from "@/utils/webhookApi";
 import { Textarea } from "@/components/ui/textarea";
-import { MessageSquare, Mail } from "lucide-react";
+import { MessageSquare, Mail, AlertCircle, PhoneCall } from "lucide-react";
 import { StoredWorkflow } from "@/utils/workflowStore";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface WebhookSimulatorProps {
   workflow: StoredWorkflow;
@@ -23,6 +24,7 @@ const WebhookSimulator = ({ workflow }: WebhookSimulatorProps) => {
   const [emailSubject, setEmailSubject] = useState<string>(workflow.keyword || "");
   const [emailBody, setEmailBody] = useState<string>("Hello, I'm interested in your service.");
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [testResult, setTestResult] = useState<{success: boolean, message: string} | null>(null);
 
   // Only show for active workflows
   if (workflow.status !== 'active') {
@@ -31,6 +33,8 @@ const WebhookSimulator = ({ workflow }: WebhookSimulatorProps) => {
 
   const handleSimulate = async () => {
     setIsLoading(true);
+    setTestResult(null);
+    
     try {
       let success = false;
       
@@ -43,8 +47,19 @@ const WebhookSimulator = ({ workflow }: WebhookSimulatorProps) => {
       }
       
       console.log(`Simulation result: ${success ? 'Success' : 'No matching workflows'}`);
+      
+      setTestResult({
+        success,
+        message: success 
+          ? `Test successful. Check execution logs below.` 
+          : `No workflow matched. Make sure your test message includes the keyword "${workflow.keyword}".`
+      });
     } catch (error) {
       console.error('Simulation error:', error);
+      setTestResult({
+        success: false,
+        message: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
+      });
     } finally {
       setIsLoading(false);
     }
@@ -62,9 +77,18 @@ const WebhookSimulator = ({ workflow }: WebhookSimulatorProps) => {
       <CardContent>
         <Tabs defaultValue="sms" value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid grid-cols-3 mb-4">
-            <TabsTrigger value="sms">SMS</TabsTrigger>
-            <TabsTrigger value="whatsapp">WhatsApp</TabsTrigger>
-            <TabsTrigger value="email">Email</TabsTrigger>
+            <TabsTrigger value="sms" disabled={!workflow.trigger.channels.includes('SMS')}>
+              <PhoneCall className="h-4 w-4 mr-2" />
+              SMS
+            </TabsTrigger>
+            <TabsTrigger value="whatsapp" disabled={!workflow.trigger.channels.includes('WhatsApp')}>
+              <MessageSquare className="h-4 w-4 mr-2" />
+              WhatsApp
+            </TabsTrigger>
+            <TabsTrigger value="email" disabled={!workflow.trigger.channels.includes('Email')}>
+              <Mail className="h-4 w-4 mr-2" />
+              Email
+            </TabsTrigger>
           </TabsList>
           
           <TabsContent value="sms" className="space-y-4">
@@ -76,6 +100,9 @@ const WebhookSimulator = ({ workflow }: WebhookSimulatorProps) => {
                 value={senderSMS}
                 onChange={(e) => setSenderSMS(e.target.value)}
               />
+              <p className="text-xs text-gray-500">
+                Format: +[country code][number], e.g., +15551234567
+              </p>
             </div>
             
             <div className="grid w-full gap-2">
@@ -90,7 +117,7 @@ const WebhookSimulator = ({ workflow }: WebhookSimulatorProps) => {
                 <MessageSquare className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               </div>
               <p className="text-xs text-gray-500">
-                Include the trigger keyword "{workflow.keyword}" to activate the workflow
+                Include the trigger keyword "{workflow.trigger.keyword}" to activate the workflow
               </p>
             </div>
           </TabsContent>
@@ -104,6 +131,9 @@ const WebhookSimulator = ({ workflow }: WebhookSimulatorProps) => {
                 value={senderWhatsApp}
                 onChange={(e) => setSenderWhatsApp(e.target.value)}
               />
+              <p className="text-xs text-gray-500">
+                Format: +[country code][number], e.g., +15551234567
+              </p>
             </div>
             
             <div className="grid w-full gap-2">
@@ -118,7 +148,7 @@ const WebhookSimulator = ({ workflow }: WebhookSimulatorProps) => {
                 <MessageSquare className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               </div>
               <p className="text-xs text-gray-500">
-                Include the trigger keyword "{workflow.keyword}" to activate the workflow
+                Include the trigger keyword "{workflow.trigger.keyword}" to activate the workflow
               </p>
             </div>
           </TabsContent>
@@ -146,7 +176,7 @@ const WebhookSimulator = ({ workflow }: WebhookSimulatorProps) => {
                 <Mail className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               </div>
               <p className="text-xs text-gray-500">
-                Include the trigger keyword "{workflow.keyword}" in the subject to activate the workflow
+                Include the trigger keyword "{workflow.trigger.keyword}" in the subject to activate the workflow
               </p>
             </div>
             
@@ -162,6 +192,18 @@ const WebhookSimulator = ({ workflow }: WebhookSimulatorProps) => {
             </div>
           </TabsContent>
         </Tabs>
+        
+        {testResult && (
+          <Alert className={`mt-4 ${testResult.success ? 'bg-green-50' : 'bg-red-50'}`}>
+            <AlertCircle className={`h-4 w-4 ${testResult.success ? 'text-green-500' : 'text-red-500'}`} />
+            <AlertTitle className={testResult.success ? 'text-green-700' : 'text-red-700'}>
+              {testResult.success ? 'Test Successful' : 'Test Failed'}
+            </AlertTitle>
+            <AlertDescription className={testResult.success ? 'text-green-600' : 'text-red-600'}>
+              {testResult.message}
+            </AlertDescription>
+          </Alert>
+        )}
       </CardContent>
       
       <CardFooter className="flex justify-between">

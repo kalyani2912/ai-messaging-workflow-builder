@@ -70,6 +70,19 @@ async function processInboundMessage(
   // Execute each matching workflow
   for (const workflow of matchingWorkflows) {
     try {
+      // Log the trigger received
+      const triggerLogEntry: ExecutionLogEntry = {
+        timestamp: new Date().toISOString(),
+        channel,
+        recipient: sender,
+        status: 'success',
+        message: `Received ${workflow.trigger.keyword} via ${channel}`,
+        trigger_type: 'keyword',
+        trigger_value: workflow.trigger.keyword
+      };
+      
+      updateWorkflowExecutionLog(workflow.id, triggerLogEntry);
+      
       // Get the message for this channel
       let message = '';
       let subject = '';
@@ -85,8 +98,29 @@ async function processInboundMessage(
         message = workflow.action.messages.messenger;
       } else {
         // No message for this channel
+        const noMessageLogEntry: ExecutionLogEntry = {
+          timestamp: new Date().toISOString(),
+          channel,
+          recipient: sender,
+          status: 'error',
+          message: `No message template configured for ${channel}`,
+          error: `Workflow is missing a message template for ${channel}`
+        };
+        
+        updateWorkflowExecutionLog(workflow.id, noMessageLogEntry);
         continue;
       }
+      
+      // Log workflow match
+      const matchLogEntry: ExecutionLogEntry = {
+        timestamp: new Date().toISOString(),
+        channel,
+        recipient: sender,
+        status: 'success',
+        message: `Workflow '${workflow.type}' matched (${channel.toUpperCase()})`,
+      };
+      
+      updateWorkflowExecutionLog(workflow.id, matchLogEntry);
       
       // Send the message (with delay if specified)
       const delay = workflow.action.delay !== 'immediate'
@@ -105,7 +139,8 @@ async function processInboundMessage(
           channel,
           recipient: sender,
           status: 'success',
-          message: `Scheduled to send in ${workflow.action.delay}`
+          message: `Scheduled to send in ${workflow.action.delay}`,
+          trigger_value: workflow.trigger.keyword
         };
         
         updateWorkflowExecutionLog(workflow.id, logEntry);
@@ -123,7 +158,9 @@ async function processInboundMessage(
         recipient: sender,
         status: 'error',
         message: 'Failed to execute workflow',
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error.message : String(error),
+        trigger_type: 'keyword',
+        trigger_value: workflow.trigger.keyword
       };
       
       updateWorkflowExecutionLog(workflow.id, logEntry);
@@ -142,7 +179,12 @@ async function executeMessageSend(
   subject = ''
 ): Promise<void> {
   try {
-    await sendMessage(recipient, message, channel, subject);
+    // Truncate message for logging if too long
+    const truncatedMessage = message.length > 30 ? 
+      message.substring(0, 30) + '...' : message;
+    
+    // Send the message
+    const messageId = await sendMessage(recipient, message, channel, subject);
     
     // Log the success
     const logEntry: ExecutionLogEntry = {
@@ -150,7 +192,8 @@ async function executeMessageSend(
       channel,
       recipient,
       status: 'success',
-      message: `Sent message via ${channel}`
+      message: `Sent message: "${truncatedMessage}"`,
+      provider_response: `Message ID: ${messageId}`
     };
     
     updateWorkflowExecutionLog(workflowId, logEntry);

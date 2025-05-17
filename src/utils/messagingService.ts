@@ -44,23 +44,20 @@ export const sendMessage = async (
 // Send SMS via Vonage or Twilio API (simulated)
 async function sendSMS(to: string, content: string, options: MessageOptions): Promise<string> {
   // In a real implementation, this would call the Vonage or Twilio API
-  /* 
-  Example Vonage API call:
-  const vonage = new Vonage({
-    apiKey: "YOUR_API_KEY",
-    apiSecret: "YOUR_API_SECRET"
-  });
   
-  const response = await vonage.sms.send({
-    from: options.from || "SENDER_NAME",
-    to,
-    text: content
-  });
-  */
+  // Validate phone number (simple validation)
+  if (!to.match(/^\+\d{10,15}$/)) {
+    toast({
+      title: "SMS Failed",
+      description: `Invalid phone number format: ${to}`,
+      variant: "destructive"
+    });
+    throw new Error("Invalid phone number format");
+  }
   
   // For demo, just display a toast
   toast({
-    title: "SMS Sent",
+    title: "SMS Sent Successfully",
     description: `To: ${to.substring(0, 5)}... (${to.length} digits)`
   });
   
@@ -70,29 +67,20 @@ async function sendSMS(to: string, content: string, options: MessageOptions): Pr
 // Send WhatsApp via Meta WhatsApp Cloud API (simulated)
 async function sendWhatsApp(to: string, content: string, options: MessageOptions): Promise<string> {
   // In a real implementation, this would call the WhatsApp Business API
-  /*
-  Example WhatsApp API call:
-  const response = await fetch(
-    `https://graph.facebook.com/v13.0/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`,
-    {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.WHATSAPP_ACCESS_TOKEN}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        messaging_product: "whatsapp",
-        to,
-        type: "text",
-        text: { body: content }
-      })
-    }
-  );
-  */
+  
+  // Validate phone number (simple validation)
+  if (!to.match(/^\+\d{10,15}$/)) {
+    toast({
+      title: "WhatsApp Failed",
+      description: `Invalid phone number format: ${to}`,
+      variant: "destructive"
+    });
+    throw new Error("Invalid phone number format");
+  }
   
   // For demo, just display a toast
   toast({
-    title: "WhatsApp Sent",
+    title: "WhatsApp Sent Successfully",
     description: `To: ${to.substring(0, 5)}... (${to.length} digits)`
   });
   
@@ -102,20 +90,21 @@ async function sendWhatsApp(to: string, content: string, options: MessageOptions
 // Send Email via Resend or SendGrid (simulated)
 async function sendEmail(to: string, content: string, subject: string, options: MessageOptions): Promise<string> {
   // In a real implementation, this would call the Resend or SendGrid API
-  /*
-  Example Resend API call:
-  const resend = new Resend('re_123456789');
-  const response = await resend.emails.send({
-    from: options.from || 'onboarding@resend.dev',
-    to,
-    subject: subject || 'Message from Workflow',
-    html: content
-  });
-  */
+  
+  // Validate email (simple validation)
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(to)) {
+    toast({
+      title: "Email Failed",
+      description: `Invalid email address: ${to}`,
+      variant: "destructive"
+    });
+    throw new Error("Invalid email address");
+  }
   
   // For demo, just display a toast
   toast({
-    title: "Email Sent",
+    title: "Email Sent Successfully",
     description: `To: ${to.substring(0, 10)}...`,
   });
   
@@ -125,27 +114,10 @@ async function sendEmail(to: string, content: string, subject: string, options: 
 // Send Messenger via Meta Messenger API (simulated)
 async function sendMessenger(to: string, content: string, options: MessageOptions): Promise<string> {
   // In a real implementation, this would call the Messenger API
-  /*
-  Example Messenger API call:
-  const response = await fetch(
-    `https://graph.facebook.com/v13.0/me/messages`,
-    {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.PAGE_ACCESS_TOKEN}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        recipient: { id: to },
-        message: { text: content }
-      })
-    }
-  );
-  */
   
   // For demo, just display a toast
   toast({
-    title: "Messenger Sent",
+    title: "Messenger Sent Successfully",
     description: `To: ${to.substring(0, 8)}...`
   });
   

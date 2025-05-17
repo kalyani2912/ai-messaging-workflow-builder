@@ -55,4 +55,7 @@ export interface ExecutionLogEntry {
   status: 'success' | 'error';
   message: string;
   error?: string;
+  trigger_type?: string;
+  trigger_value?: string;
+  provider_response?: string;
 }
