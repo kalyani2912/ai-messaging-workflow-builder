@@ -15,7 +15,7 @@ export interface User {
 
 const users: User[] = [];
 let currentUser: User | null = null;
-const HUBSPOT_FIXED_TOKEN = "your_fixed_private_app_token_here";
+const HUBSPOT_FIXED_TOKEN = "pat-na2-d864e111-79f7-4bf4-a088-1e98cd639f08";
 
 const initializeSession = () => {
   const storedUser = localStorage.getItem('currentUser');
