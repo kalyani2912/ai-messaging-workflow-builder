@@ -9,14 +9,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { isAuthenticated, getCurrentUser } from "@/utils/userStore";
 
-interface WorkflowStep {
-  id: number;
-  type: "trigger" | "message" | "condition" | "data_source" | "opt_out";
-  description: string;
-  channel?: "SMS" | "Email" | "WhatsApp" | "Messenger";
-  timing?: string;
-  data_source?: "csv" | "hubspot";
-}
+// Import the WorkflowStep type from the component that uses it
+import { WorkflowStep } from "../components/createWorkflow/WorkflowPreview";
 
 // Check if HubSpot is connected
 const isHubspotConnected = (): boolean => {

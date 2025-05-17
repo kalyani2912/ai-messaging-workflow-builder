@@ -5,9 +5,9 @@ import { toast } from "@/hooks/use-toast";
 import { WorkflowData } from "@/utils/openAiApi";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-interface WorkflowStep {
+export interface WorkflowStep {
   id: number;
-  type: "trigger" | "message" | "condition";
+  type: "trigger" | "message" | "condition" | "data_source" | "opt_out";
   description: string;
   channel?: "SMS" | "Email" | "WhatsApp" | "Messenger";
   timing?: string;
@@ -31,6 +31,22 @@ const getStepIcon = (type: string, channel?: string) => {
       <div className="h-10 w-10 bg-amber-100 rounded-full flex items-center justify-center text-amber-700">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="h-5 w-5">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      </div>
+    );
+  } else if (type === "data_source") {
+    return (
+      <div className="h-10 w-10 bg-purple-100 rounded-full flex items-center justify-center text-purple-700">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="h-5 w-5">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+        </svg>
+      </div>
+    );
+  } else if (type === "opt_out") {
+    return (
+      <div className="h-10 w-10 bg-red-100 rounded-full flex items-center justify-center text-red-700">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="h-5 w-5">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
         </svg>
       </div>
     );
