@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "../components/Layout";
@@ -6,19 +7,27 @@ import ChatInterface from "../components/createWorkflow/ChatInterface";
 import WorkflowPreview from "../components/createWorkflow/WorkflowPreview";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { isAuthenticated } from "@/utils/userStore";
+import { isAuthenticated, getCurrentUser } from "@/utils/userStore";
 
 interface WorkflowStep {
   id: number;
-  type: "trigger" | "message" | "condition";
+  type: "trigger" | "message" | "condition" | "data_source" | "opt_out";
   description: string;
   channel?: "SMS" | "Email" | "WhatsApp" | "Messenger";
   timing?: string;
+  data_source?: "csv" | "hubspot";
+}
+
+// Check if HubSpot is connected
+const isHubspotConnected = (): boolean => {
+  const user = getCurrentUser();
+  return user?.hubspot_connected || false;
 }
 
 const CreateWorkflow = () => {
   const [workflowSteps, setWorkflowSteps] = useState<WorkflowStep[]>([]);
   const [showAuthAlert, setShowAuthAlert] = useState(false);
+  const [showHubspotAlert, setShowHubspotAlert] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -26,6 +35,8 @@ const CreateWorkflow = () => {
     const timer = setTimeout(() => {
       if (!isAuthenticated()) {
         setShowAuthAlert(true);
+      } else if (!isHubspotConnected()) {
+        setShowHubspotAlert(true);
       }
     }, 500);
     
@@ -34,6 +45,18 @@ const CreateWorkflow = () => {
 
   const handleUpdateWorkflow = (steps: WorkflowStep[]) => {
     setWorkflowSteps(steps);
+  };
+
+  const handleConnectHubspot = () => {
+    // In a real app, this would redirect to HubSpot OAuth flow
+    // For this demo, we'll just simulate with a console log
+    console.log("Connecting to HubSpot...");
+    
+    // Simulate OAuth redirect and return
+    setTimeout(() => {
+      alert("HubSpot connected successfully! (Simulated)");
+      setShowHubspotAlert(false);
+    }, 1000);
   };
 
   return (
@@ -57,6 +80,23 @@ const CreateWorkflow = () => {
                 </Button>
                 <Button size="sm" onClick={() => navigate("/signup")}>
                   Sign Up
+                </Button>
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {showHubspotAlert && !showAuthAlert && (
+          <Alert className="mb-4">
+            <AlertTitle>Connect to HubSpot</AlertTitle>
+            <AlertDescription className="flex flex-col sm:flex-row sm:items-center gap-4">
+              <span>Connect your HubSpot account to use CRM data in your workflows.</span>
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" onClick={() => setShowHubspotAlert(false)}>
+                  Not Now
+                </Button>
+                <Button size="sm" onClick={handleConnectHubspot}>
+                  Connect HubSpot
                 </Button>
               </div>
             </AlertDescription>

@@ -1,4 +1,3 @@
-
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import { Button } from "@/components/ui/button";
 import { Download, FileText } from "lucide-react";
@@ -11,52 +10,28 @@ interface WorkflowDashboardProps {
 const COLORS = ['#3B82F6', '#0EA5E9', '#6366F1', '#8B5CF6'];
 
 const WorkflowDashboard = ({ workflow }: WorkflowDashboardProps) => {
-  // Mock data based on the real workflow
-  const messagesSent = workflow.execution_log?.length || 0;
-  const deliveryRate = messagesSent > 0 ? 95 : 0; // Mock delivery rate
+  // Get logs and calculate metrics
+  const logs = workflow.execution_log || [];
+  
+  // Count incoming vs outgoing messages
+  const incomingCount = logs.filter(log => log.direction === 'incoming').length;
+  const outgoingCount = logs.filter(log => log.direction === 'outgoing').length;
+  const messagesSent = outgoingCount;
+  
+  // Calculate success rates
+  const successCount = logs.filter(log => log.status === 'success').length;
+  const errorCount = logs.filter(log => log.status === 'error').length;
+  const deliveryRate = logs.length > 0 ? Math.round((successCount / logs.length) * 100) : 0;
+  
+  // Other simulated metrics
   const openRate = messagesSent > 0 ? 60 : 0;     // Mock open rate
   const replyRate = messagesSent > 0 ? 12 : 0;    // Mock reply rate
   
-  // Generate mock data for messages over time
-  const messagesOverTime = [
-    {
-      date: "Mon",
-      sent: messagesSent > 0 ? Math.floor(Math.random() * 10) + 1 : 0,
-      delivered: messagesSent > 0 ? Math.floor(Math.random() * 8) + 1 : 0,
-      opened: messagesSent > 0 ? Math.floor(Math.random() * 5) + 1 : 0,
-    },
-    {
-      date: "Tue",
-      sent: messagesSent > 0 ? Math.floor(Math.random() * 10) + 1 : 0,
-      delivered: messagesSent > 0 ? Math.floor(Math.random() * 8) + 1 : 0,
-      opened: messagesSent > 0 ? Math.floor(Math.random() * 5) + 1 : 0,
-    },
-    {
-      date: "Wed",
-      sent: messagesSent > 0 ? Math.floor(Math.random() * 10) + 1 : 0,
-      delivered: messagesSent > 0 ? Math.floor(Math.random() * 8) + 1 : 0,
-      opened: messagesSent > 0 ? Math.floor(Math.random() * 5) + 1 : 0,
-    },
-    {
-      date: "Thu",
-      sent: messagesSent > 0 ? Math.floor(Math.random() * 10) + 1 : 0,
-      delivered: messagesSent > 0 ? Math.floor(Math.random() * 8) + 1 : 0,
-      opened: messagesSent > 0 ? Math.floor(Math.random() * 5) + 1 : 0,
-    },
-    {
-      date: "Fri",
-      sent: messagesSent > 0 ? Math.floor(Math.random() * 10) + 1 : 0,
-      delivered: messagesSent > 0 ? Math.floor(Math.random() * 8) + 1 : 0,
-      opened: messagesSent > 0 ? Math.floor(Math.random() * 5) + 1 : 0,
-    },
-  ];
+  // Group messages by day of the week for bar chart
+  const messagesByDay = generateMessagesByDay(logs);
   
-  // Generate mock channel breakdown
-  const channels = workflow.channels || [workflow.trigger_channel];
-  const channelBreakdown = channels.map(channel => ({
-    name: channel,
-    value: messagesSent > 0 ? Math.floor((Math.random() * messagesSent) + 1) : 0,
-  }));
+  // Count messages by channel for pie chart
+  const channelBreakdown = generateChannelBreakdown(logs);
 
   return (
     <div className="bg-white p-6 md:p-8 rounded-lg shadow-sm border border-gray-100">
@@ -78,12 +53,12 @@ const WorkflowDashboard = ({ workflow }: WorkflowDashboardProps) => {
           <p className="text-2xl font-semibold">{messagesSent.toLocaleString()}</p>
         </div>
         <div className="bg-gray-50 p-4 rounded-lg">
-          <p className="text-sm font-medium text-gray-500 mb-1">Delivery Rate</p>
-          <p className="text-2xl font-semibold">{deliveryRate}%</p>
+          <p className="text-sm font-medium text-gray-500 mb-1">Messages Received</p>
+          <p className="text-2xl font-semibold">{incomingCount.toLocaleString()}</p>
         </div>
         <div className="bg-gray-50 p-4 rounded-lg">
-          <p className="text-sm font-medium text-gray-500 mb-1">Open Rate</p>
-          <p className="text-2xl font-semibold">{openRate}%</p>
+          <p className="text-sm font-medium text-gray-500 mb-1">Success Rate</p>
+          <p className="text-2xl font-semibold">{deliveryRate}%</p>
         </div>
         <div className="bg-gray-50 p-4 rounded-lg">
           <p className="text-sm font-medium text-gray-500 mb-1">Reply Rate</p>
@@ -95,15 +70,15 @@ const WorkflowDashboard = ({ workflow }: WorkflowDashboardProps) => {
         <h4 className="text-md font-medium mb-4">Messages Over Time</h4>
         <div className="h-80">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={messagesOverTime} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+            <BarChart data={messagesByDay} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="date" />
               <YAxis />
               <Tooltip />
               <Legend />
-              <Bar dataKey="sent" fill="#3B82F6" name="Sent" />
-              <Bar dataKey="delivered" fill="#0EA5E9" name="Delivered" />
-              <Bar dataKey="opened" fill="#6366F1" name="Opened" />
+              <Bar dataKey="incoming" fill="#F59E0B" name="Incoming" />
+              <Bar dataKey="outgoing" fill="#3B82F6" name="Outgoing" />
+              <Bar dataKey="successful" fill="#10B981" name="Successful" />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -136,6 +111,96 @@ const WorkflowDashboard = ({ workflow }: WorkflowDashboardProps) => {
       </div>
     </div>
   );
+};
+
+// Helper function to generate message data by day
+const generateMessagesByDay = (logs: any[]) => {
+  if (!logs || logs.length === 0) {
+    return generateEmptyWeekData();
+  }
+  
+  // Map days of the week
+  const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  
+  // Create a map to store counts by day
+  const dayMap: Record<string, {incoming: number, outgoing: number, successful: number}> = {};
+  
+  // Initialize all days
+  daysOfWeek.forEach(day => {
+    dayMap[day] = { incoming: 0, outgoing: 0, successful: 0 };
+  });
+  
+  // Count messages by day
+  logs.forEach(log => {
+    const date = new Date(log.timestamp);
+    const day = daysOfWeek[date.getDay()];
+    
+    if (log.direction === 'incoming') {
+      dayMap[day].incoming++;
+    } else if (log.direction === 'outgoing') {
+      dayMap[day].outgoing++;
+      if (log.status === 'success') {
+        dayMap[day].successful++;
+      }
+    }
+  });
+  
+  // Convert map to array for chart
+  return daysOfWeek.map(day => ({
+    date: day,
+    incoming: dayMap[day].incoming,
+    outgoing: dayMap[day].outgoing,
+    successful: dayMap[day].successful,
+  }));
+};
+
+// Helper function to generate empty week data
+const generateEmptyWeekData = () => {
+  return [
+    { date: 'Sun', incoming: 0, outgoing: 0, successful: 0 },
+    { date: 'Mon', incoming: 0, outgoing: 0, successful: 0 },
+    { date: 'Tue', incoming: 0, outgoing: 0, successful: 0 },
+    { date: 'Wed', incoming: 0, outgoing: 0, successful: 0 },
+    { date: 'Thu', incoming: 0, outgoing: 0, successful: 0 },
+    { date: 'Fri', incoming: 0, outgoing: 0, successful: 0 },
+    { date: 'Sat', incoming: 0, outgoing: 0, successful: 0 },
+  ];
+};
+
+// Helper function to generate channel breakdown
+const generateChannelBreakdown = (logs: any[]) => {
+  if (!logs || logs.length === 0) {
+    return [
+      { name: 'SMS', value: 0 },
+      { name: 'WhatsApp', value: 0 },
+      { name: 'Email', value: 0 },
+      { name: 'Messenger', value: 0 },
+    ];
+  }
+  
+  // Count by channel
+  const channelCounts: Record<string, number> = {
+    sms: 0,
+    whatsapp: 0,
+    email: 0,
+    messenger: 0,
+  };
+  
+  // Only count outgoing messages
+  logs.filter(log => log.direction === 'outgoing').forEach(log => {
+    const channel = log.channel.toLowerCase();
+    if (channelCounts[channel] !== undefined) {
+      channelCounts[channel]++;
+    }
+  });
+  
+  // Convert to chart data format
+  return [
+    { name: 'SMS', value: channelCounts.sms },
+    { name: 'WhatsApp', value: channelCounts.whatsapp },
+    { name: 'Email', value: channelCounts.email },
+    { name: 'Messenger', value: channelCounts.messenger },
+  ].filter(item => item.value > 0);  // Only show channels with messages
 };
 
 export default WorkflowDashboard;

@@ -14,6 +14,21 @@ export interface WorkflowData {
   csv_uploaded?: boolean;
   add_opt_out?: boolean;
   launch_decision?: string;
+  crm_source?: 'csv' | 'hubspot';
+  selected_contacts?: ContactData[];
+}
+
+export interface ContactData {
+  id: string;
+  name: string;
+  phone?: string;
+  email?: string;
+  preferred_channel?: string;
+  opt_in: boolean;
+  appointment_type?: string;
+  appointment_time?: string;
+  appointment_notes?: string;
+  crm_id?: string;
 }
 
 // Types for executable workflows
@@ -36,6 +51,7 @@ export interface ExecutableWorkflow {
     phone: string;
   };
   execution_log: ExecutionLogEntry[];
+  contacts?: ContactData[];
 }
 
 export interface ActionMessages {
@@ -58,6 +74,9 @@ export interface ExecutionLogEntry {
   trigger_type?: string;
   trigger_value?: string;
   provider_response?: string;
+  direction?: 'incoming' | 'outgoing';
+  personalized_content?: string;
+  original_content?: string;
 }
 
 // Adding this interface to match what WebhookSimulator expects
@@ -84,4 +103,39 @@ export interface StoredWorkflow {
     keyword: string;
     channels: string[];
   };
+  contacts?: ContactData[];
+  crm_source?: 'csv' | 'hubspot';
+  add_opt_out?: boolean;
+  opt_out_message?: string;
+}
+
+// CRM Integration types
+export interface HubSpotCredentials {
+  access_token: string;
+  refresh_token: string;
+  expires_at: number;
+  user_id: string;
+}
+
+export interface HubSpotContact {
+  id: string;
+  properties: {
+    firstname?: string;
+    lastname?: string;
+    email?: string;
+    phone?: string;
+    opt_in?: boolean;
+    [key: string]: any;
+  }
+}
+
+export interface HubSpotMeeting {
+  id: string;
+  properties: {
+    hs_meeting_title?: string;
+    hs_meeting_body?: string;
+    hs_meeting_start_time?: string;
+    hs_meeting_end_time?: string;
+    [key: string]: any;
+  }
 }

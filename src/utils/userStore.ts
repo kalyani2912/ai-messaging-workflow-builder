@@ -1,6 +1,7 @@
 
 // Simple user store for authentication (in a real app, this would use proper backend auth)
 import { toast } from "@/hooks/use-toast";
+import { HubSpotCredentials } from "./types/workflow";
 
 export interface User {
   id: string;
@@ -9,6 +10,8 @@ export interface User {
   name?: string;
   phone?: string; // Added phone property
   createdAt: string;
+  hubspot_connected?: boolean;
+  hubspot_credentials?: HubSpotCredentials;
 }
 
 // In-memory user store (in a real app, this would be a database)
@@ -112,6 +115,66 @@ export const getCurrentUser = (): User | null => {
 
 export const isAuthenticated = (): boolean => {
   return currentUser !== null;
+};
+
+// Add HubSpot connection methods
+export const connectHubSpot = (credentials: HubSpotCredentials): boolean => {
+  if (!currentUser) {
+    toast({
+      title: "Authentication required",
+      description: "Please sign in to connect HubSpot.",
+      variant: "destructive"
+    });
+    return false;
+  }
+  
+  // Update user with HubSpot credentials
+  currentUser.hubspot_connected = true;
+  currentUser.hubspot_credentials = credentials;
+  
+  // Update in users array
+  const userIndex = users.findIndex(u => u.id === currentUser?.id);
+  if (userIndex >= 0) {
+    users[userIndex] = { ...currentUser };
+  }
+  
+  // Update localStorage
+  localStorage.setItem('currentUser', JSON.stringify(currentUser));
+  localStorage.setItem('users', JSON.stringify(users));
+  
+  toast({
+    title: "HubSpot Connected",
+    description: "Your HubSpot CRM account has been connected successfully.",
+  });
+  
+  return true;
+};
+
+export const disconnectHubSpot = (): boolean => {
+  if (!currentUser) {
+    return false;
+  }
+  
+  // Remove HubSpot credentials
+  currentUser.hubspot_connected = false;
+  delete currentUser.hubspot_credentials;
+  
+  // Update in users array
+  const userIndex = users.findIndex(u => u.id === currentUser?.id);
+  if (userIndex >= 0) {
+    users[userIndex] = { ...currentUser };
+  }
+  
+  // Update localStorage
+  localStorage.setItem('currentUser', JSON.stringify(currentUser));
+  localStorage.setItem('users', JSON.stringify(users));
+  
+  toast({
+    title: "HubSpot Disconnected",
+    description: "Your HubSpot CRM account has been disconnected.",
+  });
+  
+  return true;
 };
 
 // Load users from localStorage on module initialization

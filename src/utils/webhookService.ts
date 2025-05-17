@@ -1,7 +1,8 @@
 
 import { getActiveWorkflows, updateWorkflowExecutionLog } from "./workflowStore";
-import { ExecutionLogEntry } from "./openAiApi";
+import { ExecutionLogEntry, ContactData } from "./types/workflow";
 import { sendMessage } from "./messagingService";
+import { personalizeMessage } from "./workflow/workflowGenerator";
 
 // Interface for inbound message payloads
 interface InboundTextMessage {
@@ -70,13 +71,27 @@ async function processInboundMessage(
   // Execute each matching workflow
   for (const workflow of matchingWorkflows) {
     try {
+      // Log the incoming message
+      const incomingLogEntry: ExecutionLogEntry = {
+        timestamp: new Date().toISOString(),
+        channel,
+        recipient: sender,
+        status: 'success',
+        message: `Received '${content}' via ${channel}`,
+        direction: 'incoming',
+        trigger_type: 'keyword',
+        trigger_value: workflow.trigger.keyword
+      };
+      
+      updateWorkflowExecutionLog(workflow.id, incomingLogEntry);
+      
       // Log the trigger received
       const triggerLogEntry: ExecutionLogEntry = {
         timestamp: new Date().toISOString(),
         channel,
         recipient: sender,
         status: 'success',
-        message: `Received ${workflow.trigger.keyword} via ${channel}`,
+        message: `Workflow triggered by keyword '${workflow.trigger.keyword}' via ${channel}`,
         trigger_type: 'keyword',
         trigger_value: workflow.trigger.keyword
       };
@@ -122,6 +137,14 @@ async function processInboundMessage(
       
       updateWorkflowExecutionLog(workflow.id, matchLogEntry);
       
+      // Look for a contact record matching this sender
+      let contactData: ContactData | undefined;
+      if (workflow.contacts && workflow.contacts.length > 0) {
+        contactData = workflow.contacts.find(c => 
+          c.phone === sender || c.email === sender
+        );
+      }
+      
       // Send the message (with delay if specified)
       const delay = workflow.action.delay !== 'immediate'
         ? parseDelayToMs(workflow.action.delay)
@@ -130,7 +153,7 @@ async function processInboundMessage(
       if (delay > 0) {
         // Schedule the message
         setTimeout(() => {
-          executeMessageSend(workflow.id, sender, message, channel as any, subject);
+          executeMessageSend(workflow.id, sender, message, channel as any, subject, contactData);
         }, delay);
         
         // Log the scheduled message
@@ -146,7 +169,7 @@ async function processInboundMessage(
         updateWorkflowExecutionLog(workflow.id, logEntry);
       } else {
         // Send immediately
-        await executeMessageSend(workflow.id, sender, message, channel as any, subject);
+        await executeMessageSend(workflow.id, sender, message, channel as any, subject, contactData);
       }
     } catch (error) {
       console.error(`Error executing workflow ${workflow.id}:`, error);
@@ -176,15 +199,21 @@ async function executeMessageSend(
   recipient: string, 
   message: string, 
   channel: 'sms' | 'whatsapp' | 'email' | 'messenger',
-  subject = ''
+  subject = '',
+  contactData?: ContactData
 ): Promise<void> {
   try {
-    // Truncate message for logging if too long
-    const truncatedMessage = message.length > 30 ? 
-      message.substring(0, 30) + '...' : message;
+    // Store original message for logging
+    const originalMessage = message;
     
-    // Send the message
-    const messageId = await sendMessage(recipient, message, channel, subject);
+    // Send the message with personalization if contact data is available
+    const { messageId, personalizedContent } = await sendMessage(recipient, message, channel, subject, {
+      contactData
+    });
+    
+    // Truncate message for logging if too long
+    const truncatedMessage = personalizedContent && personalizedContent.length > 30 ? 
+      personalizedContent.substring(0, 30) + '...' : personalizedContent || message;
     
     // Log the success
     const logEntry: ExecutionLogEntry = {
@@ -193,7 +222,10 @@ async function executeMessageSend(
       recipient,
       status: 'success',
       message: `Sent message: "${truncatedMessage}"`,
-      provider_response: `Message ID: ${messageId}`
+      provider_response: `Message ID: ${messageId}`,
+      direction: 'outgoing',
+      personalized_content: personalizedContent,
+      original_content: originalMessage
     };
     
     updateWorkflowExecutionLog(workflowId, logEntry);
@@ -205,7 +237,8 @@ async function executeMessageSend(
       recipient,
       status: 'error',
       message: `Failed to send message via ${channel}`,
-      error: error instanceof Error ? error.message : String(error)
+      error: error instanceof Error ? error.message : String(error),
+      direction: 'outgoing'
     };
     
     updateWorkflowExecutionLog(workflowId, logEntry);
