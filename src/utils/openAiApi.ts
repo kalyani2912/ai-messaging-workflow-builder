@@ -219,7 +219,7 @@ export const generateWorkflowJSON = (workflowData: WorkflowData, userId: string,
     workflowData.channels.forEach(channel => {
       if (channel.toLowerCase() === 'email') {
         workflow.action.messages.email = {
-          subject: `${workflowData.keyword} Notification`,
+          subject: `${workflowData.keyword || 'Notification'}`,
           body: messageContent
         };
       } else {
@@ -233,7 +233,7 @@ export const generateWorkflowJSON = (workflowData: WorkflowData, userId: string,
     const channel = workflowData.trigger_channel.toLowerCase();
     if (channel === 'email') {
       workflow.action.messages.email = {
-        subject: `${workflowData.keyword} Notification`,
+        subject: `${workflowData.keyword || 'Notification'}`,
         body: workflowData.message.content
       };
     } else if (channel === 'sms' || channel === 'whatsapp' || channel === 'messenger') {
