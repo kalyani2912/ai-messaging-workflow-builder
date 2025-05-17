@@ -12,6 +12,9 @@ export interface User {
   createdAt: string;
   hubspot_connected?: boolean;
   hubspot_credentials?: HubSpotCredentials;
+  hubspot_token?: string;
+  hubspot_refresh_token?: string;
+  hubspot_token_expires_at?: number;
 }
 
 // In-memory user store (in a real app, this would be a database)
