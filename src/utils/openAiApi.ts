@@ -238,7 +238,9 @@ export const generateWorkflowJSON = (workflowData: WorkflowData, userId: string,
       };
     } else if (channel === 'sms' || channel === 'whatsapp' || channel === 'messenger') {
       const channelKey = channel as keyof ActionMessages;
-      workflow.action.messages[channelKey] = workflowData.message.content;
+      if (channelKey === 'sms' || channelKey === 'whatsapp' || channelKey === 'messenger') {
+        workflow.action.messages[channelKey] = workflowData.message.content;
+      }
     }
   }
   
