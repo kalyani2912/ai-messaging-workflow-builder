@@ -1,4 +1,3 @@
-
 // This is a placeholder for your API key - to be replaced by the user
 const OPENAI_API_KEY = "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";
 
@@ -188,6 +187,61 @@ export interface WorkflowData {
   launch_decision?: string;
 }
 
+// Generate a structured workflow JSON for execution
+export const generateWorkflowJSON = (workflowData: WorkflowData, userId: string, userEmail: string = "", userPhone: string = ""): ExecutableWorkflow => {
+  const workflowId = `workflow_${Date.now()}`;
+  
+  const workflow: ExecutableWorkflow = {
+    id: workflowId,
+    status: workflowData.launch_decision === 'launched' ? 'active' : 'draft',
+    type: workflowData.workflow_type || 'keyword_trigger',
+    trigger: {
+      keyword: workflowData.keyword || '',
+      channels: workflowData.channels || [workflowData.trigger_channel || 'SMS']
+    },
+    action: {
+      type: 'send_message',
+      delay: workflowData.message?.delay || 'immediate',
+      messages: {}
+    },
+    owner: {
+      user_id: userId,
+      email: userEmail,
+      phone: userPhone
+    },
+    execution_log: []
+  };
+  
+  // Set up messages for each channel
+  if (workflowData.channels && workflowData.message?.content) {
+    const messageContent = workflowData.message.content;
+    
+    workflowData.channels.forEach(channel => {
+      const channelKey = channel.toLowerCase() as keyof ActionMessages;
+      if (channel.toLowerCase() === 'email') {
+        workflow.action.messages.email = {
+          subject: `${workflowData.keyword} Notification`,
+          body: messageContent
+        };
+      } else {
+        workflow.action.messages[channelKey] = messageContent;
+      }
+    });
+  } else if (workflowData.trigger_channel && workflowData.message?.content) {
+    const channel = workflowData.trigger_channel.toLowerCase() as keyof ActionMessages;
+    if (channel === 'email') {
+      workflow.action.messages.email = {
+        subject: `${workflowData.keyword} Notification`,
+        body: workflowData.message.content
+      };
+    } else {
+      workflow.action.messages[channel] = workflowData.message.content;
+    }
+  }
+  
+  return workflow;
+};
+
 // Workflow slot structure for managing conversation state
 export const workflowSlotDefinition = {
   "workflow_type": null,
@@ -302,3 +356,44 @@ export const generateContextualPrompt = (
   
   return prompt;
 };
+
+// Types for executable workflows
+export interface ExecutableWorkflow {
+  id: string;
+  status: 'active' | 'draft';
+  type: string;
+  trigger: {
+    keyword: string;
+    channels: string[];
+  };
+  action: {
+    type: string;
+    delay: string;
+    messages: ActionMessages;
+  };
+  owner: {
+    user_id: string;
+    email: string;
+    phone: string;
+  };
+  execution_log: ExecutionLogEntry[];
+}
+
+export interface ActionMessages {
+  sms?: string;
+  whatsapp?: string;
+  messenger?: string;
+  email?: {
+    subject: string;
+    body: string;
+  };
+}
+
+export interface ExecutionLogEntry {
+  timestamp: string;
+  channel: string;
+  recipient: string;
+  status: 'success' | 'error';
+  message: string;
+  error?: string;
+}
