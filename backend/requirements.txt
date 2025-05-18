@@ -1,0 +1,9 @@
+express
+pg
+bcrypt
+jsonwebtoken
+passport
+passport-google-oauth20 
+nodemailer 
+cors 
+dotenv
