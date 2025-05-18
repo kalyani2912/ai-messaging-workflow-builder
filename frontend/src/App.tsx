@@ -30,13 +30,14 @@ const queryClient = new QueryClient();
 
 export default function App() {
   const basename = import.meta.env.BASE_URL || '/'
-
-  /*useEffect(() => {
-    fetchMe().catch(err => console.warn(err))
-  }, []) */
+  console.log(basename);
+  useEffect(() => {
+    fetchMe().catch(err => console.warn("fetchMe failed:",err));
+  }, []) 
 
   return (
     <QueryClientProvider client={queryClient}>
+      <h1>Test App.tsx</h1>
       <BrowserRouter>
       <BrowserRouter basename={basename}></BrowserRouter>
         <Routes>
