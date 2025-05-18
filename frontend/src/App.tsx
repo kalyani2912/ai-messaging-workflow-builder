@@ -24,9 +24,11 @@ const queryClient = new QueryClient();
 
 export default function App() {
   useEffect(() => { fetchMe() }, [])
+  const basename = import.meta.env.VITE_API_BASE_URL || '/'
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
+      <BrowserRouter basename={basename}></BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/signin" element={<SignIn />} />
@@ -37,7 +39,7 @@ export default function App() {
           <Route path="/workflow/:id" element={<ProtectedRoute><WorkflowDetail/></ProtectedRoute>} />
           <Route path="/create-workflow" element={<ProtectedRoute><CreateWorkflow/></ProtectedRoute>} />
           <Route path="*" element={<NotFound />} />
-        </Routes>
+        </Routes> 
       </BrowserRouter>
     </QueryClientProvider>
   )
