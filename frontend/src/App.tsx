@@ -14,17 +14,20 @@ import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
 import ForgotPwd  from './pages/ForgotPassword';
 import ResetPwd   from './pages/ResetPassword';
-import { fetchMe, isAuthenticated } from "./utils/userStore";
+import { getCurrentUser, fetchMe } from "./utils/userStore";
+
 
 // ProtectedRoute
 const ProtectedRoute = ({ children }: { children:any }) =>
-  isAuthenticated() ? children : <Navigate to="/signin" replace />
+  getCurrentUser() ? children : <Navigate to="/signin" replace />
 
 const queryClient = new QueryClient();
 
 export default function App() {
-  useEffect(() => { fetchMe() }, [])
-  const basename = import.meta.env.VITE_API_BASE_URL || '/'
+  useEffect(() => {
+    fetchMe().catch(err => console.warn(err))
+  }, [])
+  const basename = import.meta.env.BASE_URL || '/'
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>

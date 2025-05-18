@@ -25,10 +25,15 @@ export async function signIn(email:string, password:string) {
 
 // — Fetch current user
 export async function fetchMe() {
-  const res = await apiClient('/auth/me')
-  if (res.ok) {
-    const { user } = await res.json()
-    currentUser = user
+  try {
+    const res = await apiClient('/auth/me')
+    if (res.ok) {
+      const { user } = await res.json()
+      currentUser = user
+    }
+  } catch (err) {
+    console.warn('⚠️ fetchMe failed:', err)
+    // swallow errors so your app doesn't crash
   }
 }
 
