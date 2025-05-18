@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Label } from "../components/ui/label";
 import Layout from "../components/Layout";
 import { signUp } from "../utils/userStore";
+import { GoogleSignInButton } from '../components/GoogleSignInButton';
 
 export default function SignUp() {
   const [email, setEmail] = useState('')
@@ -88,7 +89,10 @@ export default function SignUp() {
             </CardFooter>
           </form>
           <div className="my-4 text-center">
-              <div id="google-signin-button" className="my-4 text-center"></div>
+              {/* traditional button */}
+              <div className="my-4 text-center">
+                <GoogleSignInButton />
+              </div>
           </div>
           <div className="px-8 pb-6 text-center">
             <p className="text-sm text-gray-500">

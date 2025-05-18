@@ -11,15 +11,6 @@ export function initGoogleAuth(clientId: string) {
   
     window.gapi.auth2.init({ client_id: clientId }).then(() => {
       // now render the button explicitly
- 
-      window.gapi.signin2.render('google-signin-button', {
-        scope: 'profile email',
-        width: 240,
-        height: 50,
-        longtitle: true,
-        theme: 'dark',
-        onsuccess: window.onSignIn,
-      });
     });
   });
 }
