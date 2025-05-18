@@ -9,17 +9,28 @@ interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
 
-// --- Add these at the bottom of vite-env.d.ts ---
-declare global {
-  interface Window {
-    gapi: any,
-    onSignIn: (googleUser: any) => void;
+/// <reference types="vite/client" />
+
+declare namespace gapi {
+  namespace auth2 {
+    interface GoogleUser {
+      getBasicProfile(): any;
+      getAuthResponse(): { id_token: string };
+    }
+    interface GoogleAuth {
+      signIn(): Promise<GoogleUser>;
+      getAuthInstance(): GoogleAuth;
+      currentUser: { get(): GoogleUser };
+    }
   }
 
-  namespace gapi {
-    namespace auth2 {
-      type GoogleUser = any;
-    }
+  function load(lib: "auth2", callback: () => void): void;
+}
+
+declare global {
+  interface Window {
+    gapi: typeof gapi;
+    onSignIn: (googleUser: gapi.auth2.GoogleUser) => void;
   }
 }
 

@@ -1,9 +1,23 @@
 import React from 'react';
+import { initGoogleAuth, onGoogleSignIn } from '../utils/googleAuth';
 
 export function GoogleSignInButton() {
-  const handleClick = () => {
-    const auth2 = window.gapi.auth2.getAuthInstance();
-    auth2.signIn().catch(console.error);
+  const handleClick = async () => {
+    try {
+      // 1. Load & init gapi.auth2
+      const auth2 = await initGoogleAuth(
+        import.meta.env.VITE_GOOGLE_CLIENT_ID as string
+      );
+      // 2. Trigger the popup
+      const googleUser = await auth2.signIn();
+      // 3. Send ID token to backend
+      await onGoogleSignIn(
+        googleUser,
+        import.meta.env.VITE_API_BASE_URL as string
+      );
+    } catch (err) {
+      console.error('Google sign-in failed', err);
+    }
   };
 
   return (

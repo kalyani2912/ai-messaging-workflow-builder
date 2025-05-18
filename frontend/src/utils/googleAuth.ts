@@ -1,40 +1,41 @@
 // frontend/src/utils/googleAuth.ts
-import { signInWithGoogle } from './userStore';
 
 /**
- * Load & initialize the Google API client.
+ * Ensure gapi.auth2 is loaded & initialized, then resolve the GoogleAuth instance.
  */
-export function initGoogleAuth(clientId: string) {
-  // load auth2
- 
-  window.gapi.load('auth2', () => {
-  
-    window.gapi.auth2.init({ client_id: clientId }).then(() => {
-      // now render the button explicitly
+export function initGoogleAuth(clientId: string): Promise<gapi.auth2.GoogleAuth> {
+  return new Promise(resolve => {
+    // If already initialized, just return it
+    if (window.gapi?.auth2?.getAuthInstance()) {
+      return resolve(window.gapi.auth2.getAuthInstance());
+    }
+
+    // Otherwise load & init
+    window.gapi.load('auth2', () => {
+      window.gapi.auth2
+        .init({ client_id: clientId })
+        .then(googleAuth => resolve(googleAuth))
+        .catch(err => {
+          console.error('gapi.auth2.init failed', err);
+          throw err;
+        });
     });
   });
 }
 
 /**
- * Called by the Google Sign-In button on success.
+ * After sign-in, exchange the ID token with your backend.
  */
 export async function onGoogleSignIn(
   googleUser: gapi.auth2.GoogleUser,
   apiBaseUrl: string
 ) {
-  const profile = googleUser.getBasicProfile();
-  console.log('ID:', profile.getId());
-  console.log('Name:', profile.getName());
-  console.log('Email:', profile.getEmail());
-
   const idToken = googleUser.getAuthResponse().id_token;
-  
-  // use your userStore helper instead
-  const ok = await signInWithGoogle(idToken);
-  if (!ok) throw new Error('Google login failed');
-
-
-
-  // redirect after successful login
+  await fetch(`${apiBaseUrl}/auth/google-login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ idToken }),
+  });
   window.location.href = '/workflows';
 }
