@@ -23,8 +23,19 @@ export default function SignUp() {
     if (ok) navigate('/workflows')
   }
 
-  const handleGoogle = () => {
-   window.location.href = `${import.meta.env.VITE_API_BASE_URL}/auth/google`
+  const handleGoogle = (googleUser) => {
+    const profile = googleUser.getBasicProfile();
+    console.log('Google ID:', profile.getId());
+    console.log('Name:', profile.getName());
+    console.log('Email:', profile.getEmail());
+    // 4b. Send the ID token to your backend to create / verify session:
+    const id_token = googleUser.getAuthResponse().id_token;
+    fetch(`${import.meta.env.VITE_API_BASE_URL}/auth/google`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id_token }),
+    }).then(() => window.location.reload());
   }
 
   return (
@@ -39,10 +50,12 @@ export default function SignUp() {
           </CardHeader>
           <form onSubmit={handleSubmit}>
             <CardContent className="space-y-4">
-              <button type="button" onClick={handleGoogle}
-                className="w-full py-2 border rounded text-center">
-                Sign Up with Google
-              </button>
+              <div className="my-4 text-center">
+                <div
+                  className="g-signin2"
+                  data-onsuccess="onSignIn"
+                ></div>
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="name">Name</Label>
                 <Input 

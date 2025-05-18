@@ -62,3 +62,17 @@ export async function resetPassword(token:string, password:string) {
 // — Getter
 export function getCurrentUser() { return currentUser }
 export function isAuthenticated() { return currentUser !== null }
+
+
+// — Google Sign In
+export async function signInWithGoogle(idToken: string) {
+  const res = await apiClient('/auth/google-login', {
+    method: 'POST',
+    body: JSON.stringify({ idToken }),
+    credentials: 'include'
+  });
+  if (!res.ok) return false;
+  const { user } = await res.json();
+  currentUser = user;
+  return true;
+}

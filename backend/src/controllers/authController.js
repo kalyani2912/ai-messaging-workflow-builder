@@ -15,6 +15,9 @@ import {
   findOrCreateOAuthUser,
 } from '../models/userModel.js'
 
+import { OAuth2Client } from 'google-auth-library';
+const oauthClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
 dotenv.config();
 
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -68,43 +71,6 @@ export async function resetPassword(req, res) {
   res.json({ message: 'Password has been reset.' })
 }
 
-
-// — Google SSO redirect
-export function googleAuth(req, res) {
-  const clientId = process.env.GOOGLE_CLIENT_ID
-  const redirectUri = `${CLIENT_URL}/api/auth/google/callback`
-  const url = `https://accounts.google.com/o/oauth2/v2/auth?` +
-    `client_id=${clientId}&redirect_uri=${redirectUri}` +
-    `&response_type=code&scope=openid%20email%20profile`
-  res.redirect(url)
-}
-
-
-// — Google SSO callback
-export async function googleAuthCallback(req, res) {
-  const code = req.query.code
-  const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      code,
-      client_id: process.env.GOOGLE_CLIENT_ID,
-      client_secret: process.env.GOOGLE_CLIENT_SECRET,
-      redirect_uri: `${CLIENT_URL}/api/auth/google/callback`,
-      grant_type: 'authorization_code',
-    }),
-  }).then(r => r.json())
-  const userinfo = await fetch(
-    `https://openidconnect.googleapis.com/v1/userinfo`,
-    { headers: { Authorization: `Bearer ${tokenRes.access_token}` } }
-  ).then(r => r.json())
-  const { email, name } = userinfo
-  const user = await findOrCreateOAuthUser({ email, name })
-  const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '1h' })
-  res.cookie('token', token, { httpOnly: true, sameSite: 'lax' })
-  res.redirect(CLIENT_URL)
-}
-
 // — Get current user
 export async function getMe(req, res) {
   try {
@@ -122,3 +88,26 @@ export function signOut(req, res) {
   res.clearCookie('token')
   res.json({ message: 'Signed out' })
 }
+
+export async function googleLogin(req, res) {
+  const { idToken } = req.body;
+  try {
+    const ticket = await oauthClient.verifyIdToken({
+      idToken,
+      audience: process.env.GOOGLE_CLIENT_ID
+    });
+    const { sub, email, name, picture } = ticket.getPayload();
+    const user = await findOrCreateOAuthUser({
+      oauthId: sub,
+      email,
+      name,
+      picture
+    });
+    const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '1h' });
+    res.cookie('token', token, { httpOnly: true, sameSite: 'lax' });
+    res.json({ user });
+  } catch {
+    res.status(401).json({ message: 'Invalid ID token' });
+  }
+}
+

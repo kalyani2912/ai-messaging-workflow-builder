@@ -16,9 +16,9 @@
     "allowJs": true,
     "noUnusedLocals": false,
     "strictNullChecks": false,
-    "types": ["node"]
+    "types": ["node", "vite/client", "gapi", "gapi.auth2"]
   },
   "include": [
-    "src"
+    "src",
   ]
 }

@@ -21,10 +21,6 @@ export default function SignIn() {
     if (ok) navigate('/workflows')
   }
 
-  const handleGoogle = () => {
-    window.location.href = `${import.meta.env.VITE_API_BASE_URL}/auth/google`
-  }
-
   return (
     <Layout>
       <div className="container max-w-md mx-auto py-12">
@@ -54,9 +50,13 @@ export default function SignIn() {
                 <Link to="/forgot-password" className="text-sm text-blue-600 hover:underline">
                   Forgot Password?
                 </Link>
-                <Button type="button" variant="outline" onClick={handleGoogle}>
-                  Sign in with Google
-                </Button>
+              </div>
+              <div className="my-4 text-center">
+                <div
+                  className="g-signin2"
+                  data-onsuccess="onSignIn"
+                  data-theme="dark"
+                ></div>
               </div>
             </CardContent>
             <CardFooter>
