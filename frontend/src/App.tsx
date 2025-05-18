@@ -37,9 +37,7 @@ export default function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <h1>Test App.tsx</h1>
       <BrowserRouter basename={basename}>
-        <h1>Test App2.tsx</h1>
         <Routes>
           /* index route */
           <Route index element={<Index />} />
