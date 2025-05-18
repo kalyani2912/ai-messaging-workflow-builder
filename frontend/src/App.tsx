@@ -38,19 +38,19 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <h1>Test App.tsx</h1>
-      <BrowserRouter>
-      <BrowserRouter basename={basename}></BrowserRouter>
+      <BrowserRouter basename={basename}>
+        <h1>Test App2.tsx</h1>
         <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/signin" element={<SignIn />} />
-          <Route path="/signup" element={<SignUp />} />
-          <Route path="/forgot-password" element={<ForgotPwd />} />
-          <Route path="/reset-password" element={<ResetPwd />} />
+          /* index route */
           <Route index element={<Index />} />
+          
+          /* auth */    
           <Route path="signin" element={<SignIn />} />
           <Route path="signup" element={<SignUp />} />
           <Route path="forgot-password" element={<ForgotPwd />} />
           <Route path="reset-password" element={<ResetPwd />} />
+
+           /* protected */
           <Route 
             path="workflows" 
             element={<ProtectedRoute><Workflows/></ProtectedRoute>} 
@@ -59,8 +59,14 @@ export default function App() {
             path="workflow/:id" 
             element={<ProtectedRoute><WorkflowDetail/></ProtectedRoute>} 
            />
-          <Route path="create-workflow" element={<ProtectedRoute><CreateWorkflow/></ProtectedRoute>} />
+          <Route 
+          path="create-workflow" 
+          element={<ProtectedRoute><CreateWorkflow/></ProtectedRoute>} 
+          />
+
+          /* catch-all */
           <Route path="*" element={<NotFound />} />
+          
         </Routes>
       </BrowserRouter>
     </QueryClientProvider>
