@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
@@ -6,7 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Label } from '../components/ui/label'
 import Layout from '../components/Layout'
 import { signIn } from '../utils/userStore'
-import { GoogleSignInButton } from '../components/GoogleSignInButton';
+import {
+  initializeGoogleIdentity,
+  renderGoogleButton,
+} from '../utils/googleGIS';
+
 
 export default function SignIn() {
   const [email, setEmail] = useState('')
@@ -21,6 +25,28 @@ export default function SignIn() {
     setIsLoading(false)
     if (ok) navigate('/workflows')
   }
+
+  const handleCredentialResponse = async (response: { credential: string }) => {
+    const idToken = response.credential;
+    await fetch(`${import.meta.env.VITE_API_BASE_URL}/auth/google-login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ idToken }),
+    });
+    window.location.href = '/workflows';
+  };
+
+  useEffect(() => {
+    initializeGoogleIdentity(
+      import.meta.env.VITE_GOOGLE_CLIENT_ID as string,
+      handleCredentialResponse
+    );
+    renderGoogleButton('google-signin-button');
+    // Optional: auto-prompt one-tap
+    // @ts-expect-error: expect error
+    google.accounts.id.prompt();
+  }, []);
 
   return (
     <Layout>
@@ -60,10 +86,7 @@ export default function SignIn() {
             </CardFooter>
           </form>
           <div className="my-4 text-center">
-            {/* traditional button */}
-            <div className="my-4 text-center">
-              <GoogleSignInButton />
-            </div>
+            <div id="google-signin-button" className="my-4 text-center"></div>
           </div>
           <div className="px-8 pb-6 text-center">
             <p className="text-sm text-gray-500">

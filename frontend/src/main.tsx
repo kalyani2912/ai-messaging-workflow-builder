@@ -2,7 +2,6 @@ import React from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
-import { initGoogleAuth, onGoogleSignIn } from './utils/googleAuth';
 
 console.log("🌱 import.meta.env =", import.meta.env);
 
@@ -15,13 +14,3 @@ if (container) {
 } else {
   console.error("Could not find #root container");
 }
-
-function setupGoogle() {
-  // expose the callback globally for the button's data-onsuccess
- 
-  window.onSignIn = (googleUser: any) => onGoogleSignIn(googleUser, apiBaseUrl);
-  initGoogleAuth(clientId);
-}
-
-// run once on startup
-setupGoogle();
