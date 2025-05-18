@@ -48,7 +48,7 @@ const Navbar = () => {
             </>
           ) : (
             <>
-              <Link to="/signin">
+              <Link to="signin">
                 <Button variant="outline">Sign In</Button>
               </Link>
               <Link to="/signup">
@@ -77,7 +77,7 @@ export default Navbar;
             <button onClick={handleSignOut} className="text-red-500">Sign Out</button>
           </>
           : <>
-            <Link to="/signin" className="mr-4">Sign In</Link>
+            <Link to="signin" className="mr-4">Sign In</Link>
             <Link to="/signup">Sign Up</Link>
           </>}
       </div>
@@ -135,7 +135,7 @@ const Navbar = () => {
             </>
           ) : (
             <>
-              <Link to="/signin">
+              <Link to="signin">
                 <Button variant="outline">Sign In</Button>
               </Link>
               <Link to="/signup">

@@ -18,16 +18,23 @@ import { getCurrentUser, fetchMe } from "./utils/userStore";
 
 
 // ProtectedRoute
-const ProtectedRoute = ({ children }: { children:any }) =>
-  getCurrentUser() ? children : <Navigate to="/signin" replace />
+const ProtectedRoute = ({ children }) => {
+   if (!getCurrentUser()) {
+     // relative redirect under basename
+     return <Navigate to="signin" replace />;
+   }
+   return <>{children}</>;
+ };
 
 const queryClient = new QueryClient();
 
 export default function App() {
-  useEffect(() => {
-    fetchMe().catch(err => console.warn(err))
-  }, [])
   const basename = import.meta.env.BASE_URL || '/'
+
+  /*useEffect(() => {
+    fetchMe().catch(err => console.warn(err))
+  }, []) */
+
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
@@ -38,12 +45,23 @@ export default function App() {
           <Route path="/signup" element={<SignUp />} />
           <Route path="/forgot-password" element={<ForgotPwd />} />
           <Route path="/reset-password" element={<ResetPwd />} />
-          <Route path="/workflows" element={<ProtectedRoute><Workflows/></ProtectedRoute>} />
-          <Route path="/workflow/:id" element={<ProtectedRoute><WorkflowDetail/></ProtectedRoute>} />
-          <Route path="/create-workflow" element={<ProtectedRoute><CreateWorkflow/></ProtectedRoute>} />
+          <Route index element={<Index />} />
+          <Route path="signin" element={<SignIn />} />
+          <Route path="signup" element={<SignUp />} />
+          <Route path="forgot-password" element={<ForgotPwd />} />
+          <Route path="reset-password" element={<ResetPwd />} />
+          <Route 
+            path="workflows" 
+            element={<ProtectedRoute><Workflows/></ProtectedRoute>} 
+           />
+          <Route 
+            path="workflow/:id" 
+            element={<ProtectedRoute><WorkflowDetail/></ProtectedRoute>} 
+           />
+          <Route path="create-workflow" element={<ProtectedRoute><CreateWorkflow/></ProtectedRoute>} />
           <Route path="*" element={<NotFound />} />
-        </Routes> 
+        </Routes>
       </BrowserRouter>
     </QueryClientProvider>
-  )
-}
+   )
+ }         
