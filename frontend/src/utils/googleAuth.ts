@@ -5,10 +5,22 @@ import { signInWithGoogle } from './userStore';
  * Load & initialize the Google API client.
  */
 export function initGoogleAuth(clientId: string) {
- // @ts-expect-error: gapi is injected by Google’s platform.js
+  // load auth2
+ 
   window.gapi.load('auth2', () => {
-     // @ts-expect-error: gapi.auth2 is available after load()
-    window.gapi.auth2.init({ client_id: clientId });
+  
+    window.gapi.auth2.init({ client_id: clientId }).then(() => {
+      // now render the button explicitly
+ 
+      window.gapi.signin2.render('google-signin-button', {
+        scope: 'profile email',
+        width: 240,
+        height: 50,
+        longtitle: true,
+        theme: 'dark',
+        onsuccess: window.onSignIn,
+      });
+    });
   });
 }
 

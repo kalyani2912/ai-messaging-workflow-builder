@@ -18,9 +18,8 @@ if (container) {
 
 function setupGoogle() {
   // expose the callback globally for the button's data-onsuccess
-  // @ts-ignore
+ 
   window.onSignIn = (googleUser: any) => onGoogleSignIn(googleUser, apiBaseUrl);
-
   initGoogleAuth(clientId);
 }
 

@@ -50,12 +50,6 @@ export default function SignUp() {
           </CardHeader>
           <form onSubmit={handleSubmit}>
             <CardContent className="space-y-4">
-              <div className="my-4 text-center">
-                <div
-                  className="g-signin2"
-                  data-onsuccess="onSignIn"
-                ></div>
-              </div>
               <div className="space-y-2">
                 <Label htmlFor="name">Name</Label>
                 <Input 
@@ -93,6 +87,9 @@ export default function SignUp() {
               </Button>
             </CardFooter>
           </form>
+          <div className="my-4 text-center">
+              <div id="google-signin-button" className="my-4 text-center"></div>
+          </div>
           <div className="px-8 pb-6 text-center">
             <p className="text-sm text-gray-500">
               Already have an account?{" "}

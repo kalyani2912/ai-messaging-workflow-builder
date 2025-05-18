@@ -1,9 +1,9 @@
 import React, { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
-import { Label } from '@/components/ui/label'
+import { Button } from '../components/ui/button'
+import { Input } from '../components/ui/input'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '../components/ui/card'
+import { Label } from '../components/ui/label'
 import Layout from '../components/Layout'
 import { signIn } from '../utils/userStore'
 
@@ -51,13 +51,6 @@ export default function SignIn() {
                   Forgot Password?
                 </Link>
               </div>
-              <div className="my-4 text-center">
-                <div
-                  className="g-signin2"
-                  data-onsuccess="onSignIn"
-                  data-theme="dark"
-                ></div>
-              </div>
             </CardContent>
             <CardFooter>
               <Button type="submit" className="w-full" disabled={isLoading}>
@@ -65,6 +58,9 @@ export default function SignIn() {
               </Button>
             </CardFooter>
           </form>
+          <div className="my-4 text-center">
+          <div id="google-signin-button" className="my-4 text-center"></div>
+        </div>
           <div className="px-8 pb-6 text-center">
             <p className="text-sm text-gray-500">
               Don’t have an account?{' '}
