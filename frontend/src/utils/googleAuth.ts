@@ -5,6 +5,7 @@
  */
 export function initGoogleAuth(clientId: string): Promise<gapi.auth2.GoogleAuth> {
   return new Promise(resolve => {
+    console.log('GOOGLE CLIENT ID →', import.meta.env.VITE_GOOGLE_CLIENT_ID);
     // If already initialized, just return it
     if (window.gapi?.auth2?.getAuthInstance()) {
       return resolve(window.gapi.auth2.getAuthInstance());
