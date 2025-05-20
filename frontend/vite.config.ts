@@ -9,6 +9,12 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 5173,
+    proxy: {
+      '/api': {              // must match the `/api` prefix
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+      },
+    },
   },
   envPrefix: "VITE_",
   plugins: [

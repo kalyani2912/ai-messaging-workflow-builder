@@ -3,6 +3,7 @@ import express        from 'express';
 import cors           from 'cors';
 import dotenv         from 'dotenv';
 import authRoutes     from './routes/auth.js';
+import hubspotRoutes  from './routes/hubspot.js';
 import cookieParser from 'cookie-parser'
 
 dotenv.config();
@@ -28,6 +29,7 @@ app.use(cookieParser());
 
 // Mount auth routes under /api/auth
 app.use('/api/auth', authRoutes);
+app.use('/api/hubspot', hubspotRoutes);
 
 // Fallback for anything else
 app.use((req, res) => {

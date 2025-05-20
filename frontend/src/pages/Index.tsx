@@ -9,11 +9,27 @@ import ExampleCarousel from "../components/home/ExampleCarousel";
 import { Alert, AlertDescription, AlertTitle } from "../components/ui/alert";
 import { Button } from "../components/ui/button";
 import { isAuthenticated, getCurrentUser } from "../utils/userStore";
-import { getHubSpotContacts } from "../utils/hubspotService";
+
+function LogHubSpotContacts() {
+  useEffect(() => {
+    async function fetchAndLog() {
+      try {
+        const res = await fetch('/api/hubspot/contacts');
+        if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+        const data = await res.json();
+        console.log('📇 HubSpot contacts:', data.results.slice(0, 5));
+      } catch (err) {
+        console.error('❌ Failed to fetch HubSpot contacts:', err);
+      }
+    }
+    fetchAndLog();
+  }, []);
+
+  return null; // this component renders nothing visible
+}
 
 
 const Index = () => {
-  const [showHubspotAlert, setShowHubspotAlert] = useState(false);
   const navigate = useNavigate();
 
   const [crmStatus, setCrmStatus] = useState<{
@@ -23,111 +39,29 @@ const Index = () => {
   }>({ tested: false, success: false, message: "" });
 
 
-
-  useEffect(() => {
-    // Check if user is logged in but hasn't connected HubSpot
-    const checkHubspotStatus = () => {
-      const user = getCurrentUser();
-      if (isAuthenticated() && user && !user.hubspot_connected) {
-        setShowHubspotAlert(true);
-      }
-    };
-    
-    checkHubspotStatus();
-  }, []);
-
-  /* const handleConnectHubspot = () => {
-    // In a real app, this would redirect to HubSpot OAuth flow
-    // For this demo, we'll just simulate with a console log
-    console.log("Connecting to HubSpot...");
-    
-    // Simulate OAuth redirect and return
-    setTimeout(() => {
-      alert("HubSpot connected successfully! (Simulated)");
-      setShowHubspotAlert(false);
-    }, 1000);
-  }; */
-
-  const handleConnectHubspot = () => {
-   /* const clientId = "YOUR_HUBSPOT_CLIENT_ID";
-    const redirectUri = "http://localhost:3000/hubspot-callback"; // or your deployed URL
-    const scopes = [
-     "crm.objects.contacts.read",
-     "crm.objects.contacts.associations.read",
-     "crm.objects.engagements.read"
-    ].join("%20");
-
-    window.location.href = `https://app.hubspot.com/oauth/authorize?client_id=${clientId}&scope=${scopes}&redirect_uri=${redirectUri}`; */
-    alert("HubSpot CRM is already connected using a fixed token.");
-  };
-
-  const handleTestCRMConnection = async () => {
-    try {
-     const contacts = await getHubSpotContacts();
-      if (contacts && contacts.length > 0) {
-        setCrmStatus({
-          tested: true,
-          success: true,
-         message: `✅ CRM Connected — Found ${contacts.length} contact(s)`
-       });
-     } else {
-       setCrmStatus({
-         tested: true,
-         success: false,
-         message: "❌ CRM connection seems valid but no contacts found."
-       });
-     }
-    } 
-    catch (error) {
-      setCrmStatus({
-      tested: true,
-      success: false,
-      message: "❌ Failed to connect to HubSpot CRM."
-     });
-    }
-  };
-
-
-
   return (
     <Layout>
-      {showHubspotAlert && (
-        <div className="container mx-auto mt-6">
-          <Alert className="mb-4">
+        <div className="container mx-auto mt-2">
+          <Alert className="mb-1">
             <AlertTitle>Enhance your workflows with HubSpot CRM</AlertTitle>
             <AlertDescription className="flex flex-col sm:flex-row sm:items-center gap-4">
-              <span>Connect your HubSpot account to use your contacts and meetings in automated workflows.</span>
               <div className="flex gap-2">
-                <Button size="sm" variant="outline" onClick={() => setShowHubspotAlert(false)}>
-                  Not Now
-                </Button>
-                <Button size="sm" onClick={handleConnectHubspot}>
-                  Connect HubSpot
-                </Button>
+              {/* — Static HubSpot Connected Banner — */}
+              <div className="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6">
+                <p className="font-medium">✅ HubSpot CRM connected</p>
+              </div>
               </div>
             </AlertDescription>
           </Alert>
         </div>
-      )}
-
-      {isAuthenticated() && getCurrentUser()?.hubspot_connected && (
-        <div className="container mx-auto mt-4">
-          <Alert className="mb-4" variant={crmStatus.success ? "default" : "destructive"}>
-            <AlertTitle>Test HubSpot CRM Connection</AlertTitle>
-            <AlertDescription className="flex flex-col sm:flex-row sm:items-center gap-4">
-              <span>{crmStatus.tested ? crmStatus.message : "Click below to verify your CRM is connected properly."}</span>
-              <Button size="sm" onClick={handleTestCRMConnection}>
-                Test Connection
-              </Button>
-            </AlertDescription>
-          </Alert>
-       </div>
-      )}
 
       <HeroSection />
       <HowItWorks />
       <KeyFeatures />
       <ExampleCarousel />
+      {/* —— new: fetch & log first 5 contacts —— */}
+        {/* On load, this will call our proxy: GET /api/hubspot/contacts and dump the results into the console.*/}
+        <LogHubSpotContacts />
     </Layout>
   );
 

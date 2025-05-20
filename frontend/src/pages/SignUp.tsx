@@ -99,8 +99,8 @@ export default function SignUp() {
               </Button>
             </CardFooter>
           </form>
-          <div className="my-4 text-center">
-            <div id="google-signin-button" className="my-4 text-center"></div>
+          <div className="w-full flex justify-center mt-4 mb-4">
+           <div id="google-signin-button"></div>
           </div>
           <div className="px-8 pb-6 text-center">
             <p className="text-sm text-gray-500">
