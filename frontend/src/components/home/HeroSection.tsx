@@ -19,9 +19,6 @@ const HeroSection = () => {
             <Button asChild size="lg">
               <Link to="/signup">Try it Free</Link>
             </Button>
-            <Button asChild variant="outline" size="lg">
-              <Link to="/create-workflow">Create a Workflow</Link>
-            </Button>
           </div>
         </div>
       </div>

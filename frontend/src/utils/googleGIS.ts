@@ -7,6 +7,7 @@ export function initializeGoogleIdentity(
   google.accounts.id.initialize({
     client_id: clientId,
     callback,
+    ux_mode: 'popup',
   });
 }
 

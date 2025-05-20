@@ -1,0 +1,42 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["triggerType", "channels", "messageTemplate", "fallbackMessage"],
+  "properties": {
+    "triggerType": {
+      "type": "string",
+      "enum": ["keyword", "scheduled"]
+    },
+    "keywords": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "schedule": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "channels": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["twilio_sms", "whatsapp", "sendgrid_email"]
+      }
+    },
+    "messageTemplate": { "type": "string" },
+    "fallbackMessage": { "type": "string" }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "triggerType": { "const": "keyword" } }
+      },
+      "then": { "required": ["keywords"] }
+    },
+    {
+      "if": {
+        "properties": { "triggerType": { "const": "scheduled" } }
+      },
+      "then": { "required": ["schedule"] }
+    }
+  ]
+}

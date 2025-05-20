@@ -24,7 +24,7 @@ export default function SignUp() {
     setIsLoading(true)
     const ok = await signUp(email, password, name)
     setIsLoading(false)
-    if (ok) navigate('/workflows')
+    if (ok) navigate('/home')
   }
 
   const handleCredentialResponse = async (response: { credential: string }) => {
@@ -35,7 +35,7 @@ export default function SignUp() {
         credentials: 'include',
         body: JSON.stringify({ idToken }),
       });
-      window.location.href = '/workflows';
+      window.location.href = '/home';
     };
   
     useEffect(() => {

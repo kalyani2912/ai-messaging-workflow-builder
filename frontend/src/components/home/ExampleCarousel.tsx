@@ -48,9 +48,9 @@ const ExampleCarousel = () => {
               <div className="p-6 md:p-10 flex flex-col justify-center">
                 <h3 className="text-2xl font-semibold mb-4">{examples[activeIndex].title}</h3>
                 <p className="text-gray-600 mb-8">{examples[activeIndex].description}</p>
-                <Button asChild className="self-start">
-                  <a href="/create-workflow">Create Similar</a>
-                </Button>
+             {/*   <Button asChild className="self-start">
+                  <a href="">Create Similar</a>  add link for create workflow here later
+                </Button>*/}
               </div>
               <div className="h-64 md:h-auto">
                 <img
